@@ -6,7 +6,7 @@ import type { Activity, Announcement, EventData, Participant } from './types'
 // Capa de datos: hoy todo vive en localStorage de cada navegador. Para producción,
 // estas mismas funciones se reemplazan por llamadas a un backend compartido.
 
-const KEY = 'fundo-organiza-v2'
+const KEY = 'fundo-organiza-v3'
 
 export interface Session {
   role: 'admin' | 'delegado'

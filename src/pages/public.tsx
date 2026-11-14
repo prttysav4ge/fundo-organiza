@@ -300,6 +300,7 @@ export function DisciplinePage() {
   const champion = final?.status === 'finalizado' ? bracket.winner[final.id] : null
   const direct = bracket.direct[d.id]
   const ginChampion = d.id === 'gincana' && bracket.gincanaDone ? bracket.gincana[0] : null
+  const chess = acts.find((a) => a.status === 'finalizado' && a.champion)?.champion
 
   return (
     <div className="page">
@@ -320,6 +321,18 @@ export function DisciplinePage() {
         <p className="champion">
           🏆 Ganador de la gincana: <b>{group(ginChampion.group)!.name}</b>
         </p>
+      )}
+
+      {chess && (
+        <p className="champion">
+          🏆 Campeón de ajedrez: <b>{chess.name}</b> ({group(chess.groupId)?.name})
+        </p>
+      )}
+
+      {d.id === 'concurso' && EVENT.votingUrl && (
+        <a className="btn primary vote" href={EVENT.votingUrl} target="_blank" rel="noreferrer">
+          🗳️ Ir a la votación
+        </a>
       )}
 
       <details className="card rules">

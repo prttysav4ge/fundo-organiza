@@ -25,7 +25,7 @@ export interface Discipline {
   name: string
   icon: string
   /** duelo: llave de eliminación. puntos: puestos que suman puntaje. partido: un solo encuentro. info: sin competencia en cancha. */
-  format: 'duelo' | 'puntos' | 'partido' | 'info'
+  format: 'duelo' | 'puntos' | 'partido' | 'individual' | 'info'
   unit?: string
   roster?: RosterRule
   summary: string
@@ -63,6 +63,8 @@ export interface Activity {
   wo?: boolean
   /** Gincana: grupos en orden de puesto (1.° a 4.°). */
   places?: string[]
+  /** Ajedrez: campeón individual. */
+  champion?: { name: string; groupId: string }
   stage?: string
   note?: string
   custom?: boolean

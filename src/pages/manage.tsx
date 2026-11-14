@@ -374,9 +374,12 @@ function ActivityEditor({ a, onDone }: { a: Activity; onDone: () => void }) {
     wo: !!a.wo,
     winner: a.winner ?? '',
     places: [0, 1, 2, 3].map((i) => a.places?.[i] ?? ''),
+    chName: a.champion?.name ?? '',
+    chGroup: a.champion?.groupId ?? '',
   })
   const [err, setErr] = useState('')
   const isGame = a.disciplineId === 'gincana'
+  const isChess = a.disciplineId === 'ajedrez'
   const teams = sides?.map((s) => s.team)
   const ready = !!teams && teams.every(Boolean)
   const labelled = !!a.sides && 'label' in a.sides[0]
@@ -399,6 +402,10 @@ function ActivityEditor({ a, onDone }: { a: Activity; onDone: () => void }) {
         if (done && tie && ready && !f.winner) return setErr('Empate: indica quién ganó en penales.')
         Object.assign(patch, { wo: false, score: [f.s0, f.s1], winner: tie && f.winner !== 'none' ? f.winner || undefined : undefined })
       }
+    }
+    if (isChess && done) {
+      if (f.chName.trim() && !f.chGroup) return setErr('Indica el ciclo del campeón.')
+      patch.champion = f.chName.trim() ? { name: f.chName.trim().replace(/\s+/g, ' '), groupId: f.chGroup } : undefined
     }
     if (isGame && done) {
       const chosen = f.places.filter(Boolean)
@@ -482,6 +489,26 @@ function ActivityEditor({ a, onDone }: { a: Activity; onDone: () => void }) {
             </label>
           )}
         </>
+      )}
+
+      {isChess && done && (
+        <div className="row">
+          <label className="grow">
+            Campeón de ajedrez (nombre completo)
+            <input value={f.chName} onChange={(e) => setF({ ...f, chName: e.target.value })} />
+          </label>
+          <label>
+            Ciclo
+            <select value={f.chGroup} onChange={(e) => setF({ ...f, chGroup: e.target.value })}>
+              <option value="">Elegir…</option>
+              {GROUPS.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       )}
 
       {isGame && done && (

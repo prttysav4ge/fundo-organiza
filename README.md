@@ -15,7 +15,7 @@ Los equipos, el cronograma, los fixtures y las reglas vienen de las bases oficia
   resultados, anuncios y el mapa interactivo del Fundo.
 - **Competencias:** fútbol, vóley y básquet con llave de eliminación que avanza sola (ganadores,
   W.O., penales, pase directo a la final según las bases); gincana con tabla de puntos (5/3/2/1);
-  fútbol y básquet damas; concurso tecnológico (información).
+  fútbol y básquet damas; ajedrez blitz abierto (campeón individual); concurso tecnológico (información).
 - **Delegados de ciclo:** inscriben con nombre, ID UPAO y número de polo. Se aplican las reglas de
   las bases: plazo de inscripción, máximo 2 deportes, gincana excluyente, un solo ciclo por
   estudiante, número único por equipo y cupos por deporte. Lo enviado no se edita: se solicita corrección.

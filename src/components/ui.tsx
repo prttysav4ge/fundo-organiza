@@ -63,6 +63,11 @@ export function ActivityCard({ a }: { a: Activity }) {
             {a.places.map((gid, i) => gid && <li key={i}>{group(gid)!.name}</li>)}
           </ol>
         )}
+        {a.status === 'finalizado' && a.champion && (
+          <p className="small result">
+            🏆 Campeón: {a.champion.name} ({group(a.champion.groupId)?.name})
+          </p>
+        )}
         <p className="act-meta">
           {d && (
             <Link to={`/competencias/${d.id}`}>

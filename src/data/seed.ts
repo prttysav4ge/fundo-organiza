@@ -5,12 +5,14 @@ import type { Activity, Discipline, EventData, Group, Side, Venue } from './type
 export const EVENT = {
   name: 'Día de Integración ICSI – ISIA 2026',
   dateLabel: 'Sábado 21 de noviembre de 2026',
-  hours: '8:00 a. m. – 4:00 p. m.',
+  hours: '8:00 a. m. – 5:00 p. m.',
   place: 'Fundo UPAO',
   day: '2026-11-21',
   /** Cierre de inscripciones: domingo 15 de noviembre, 10:00 p. m. (hora de Perú). */
   deadline: '2026-11-15T22:00:00-05:00',
   deadlineLabel: 'domingo 15 de noviembre, 10:00 p. m.',
+  /** Enlace a la votación del concurso (hoja de cálculo o formulario). Vacío = no se muestra el botón. */
+  votingUrl: '',
 }
 
 const ORD = ['1.er', '2.°', '3.er', '4.°', '5.°', '6.°', '7.°', '8.°', '9.°', '10.°']
@@ -110,6 +112,25 @@ export const DISCIPLINES: Discipline[] = [
       'Puntaje por juego: 1.° puesto 5 puntos, 2.° 3, 3.° 2 y 4.° 1.',
       'Gana el ciclo con más puntos. Desempate: más primeros puestos y, si persiste, un jalón de soga.',
       'La tabla final también desempata el pase directo a la final en fútbol, vóley y básquet.',
+    ],
+  },
+  {
+    id: 'ajedrez',
+    name: 'Ajedrez',
+    icon: '♟️',
+    format: 'individual',
+    summary: 'Torneo blitz individual y abierto a todos. Escenario, de 11:30 a. m. a 12:30 p. m. Sin inscripción previa.',
+    rules: [
+      'Pueden jugar todos los asistentes. No hay inscripción previa: quien quiera competir da su nombre completo y ciclo en el escenario antes de las 11:30 a. m.',
+      'Es también una actividad de activación: cualquiera puede acercarse a aprender y habrá personas guiando a quienes recién empiezan.',
+      'No cuenta para el límite de 2 deportes; quien juegue otro deporte es responsable de sus cruces de horario. No da derecho al almuerzo.',
+      'Ritmo: 3 minutos por jugador con 2 segundos de incremento por jugada.',
+      'Sistema suizo por rondas de 15 a 20 minutos. Si los jugadores son impares, en cada ronda descansa uno.',
+      'Al iniciar la ronda corre el reloj del ausente; si no llega antes de que se agote, pierde por W.O. Con 2 W.O. queda retirado.',
+      'Puntaje: victoria 1, empate ½, derrota 0. Desempates: resultado particular, Buchholz total y número de victorias.',
+      'Leyes del Ajedrez de la FIDE. Pieza tocada, pieza jugada. La segunda jugada ilegal pierde la partida.',
+      'Prohibido usar celulares, relojes inteligentes u otros dispositivos, conversar con el rival o el público y recibir ayuda.',
+      'El campeón se anuncia en la premiación de las 2:00 p. m. No recibe trofeo.',
     ],
   },
   {
@@ -258,10 +279,12 @@ const ACTIVITIES: Activity[] = [
   ).map(([title, start, end, note], i) => general(`g${i + 1}`, title, 'cancha4', start, end, { disciplineId: 'gincana', note, stage: `Juego ${i + 1} de 5` })),
   general('fd', 'Fútbol damas', 'cancha2', '11:20', '11:45', { disciplineId: 'futbol_damas', sides: [{ label: 'Equipo A' }, { label: 'Equipo B' }] }),
   general('bd', 'Básquet damas', 'voley', '12:55', '13:20', { disciplineId: 'basquet_damas', sides: [{ label: 'Equipo A' }, { label: 'Equipo B' }] }),
+  general('ajedrez', 'Torneo de ajedrez blitz', 'escenario', '11:30', '12:30', { disciplineId: 'ajedrez', note: 'Abierto a todos. Da tu nombre y ciclo en el escenario antes de las 11:30 a. m.' }),
+  general('dj', 'Inicio de la música con DJ Angel', 'escenario', '13:00', '13:45'),
   general('concurso', 'Anuncio del ganador del concurso', 'escenario', '13:45', '14:00', { disciplineId: 'concurso' }),
-  general('almuerzo', 'Almuerzo y premiación', 'escenario', '14:00', '15:00', { note: 'Almuerzo exclusivo para inscritos. Se entregan los trofeos a los campeones.' }),
-  general('baileton', 'Bailetón', 'escenario', '15:00', '16:00'),
-  general('bus2', 'Retorno en bus', 'fundo', '16:00', '17:00'),
+  general('almuerzo', 'Almuerzo y premiación', 'escenario', '14:00', '15:00', { note: 'Almuerzo exclusivo para inscritos. Se entregan los trofeos de fútbol, vóley, básquet y gincana y se anuncia al campeón de ajedrez.' }),
+  general('baileton', 'Bailetón', 'escenario', '15:00', '17:00'),
+  general('bus2', 'Retorno en bus', 'fundo', '17:00', '17:30'),
 ]
 
 export const seed = (): EventData => ({
@@ -295,7 +318,7 @@ export const seed = (): EventData => ({
     {
       id: 'n4',
       title: 'Buses al Fundo',
-      body: 'Salida hacia el Fundo entre las 7:00 y las 8:00 a. m. Retorno entre las 4:00 y las 5:00 p. m.',
+      body: 'Salida hacia el Fundo entre las 7:00 y las 8:00 a. m. Retorno a las 5:00 p. m.',
       date: '2026-11-13',
       groupIds: [],
       kind: 'info',

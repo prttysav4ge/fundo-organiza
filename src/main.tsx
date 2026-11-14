@@ -1,15 +1,18 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { HashRouter, MemoryRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { StoreProvider } from './data/store'
 import Manage from './pages/manage'
 import { Announcements, DisciplinePage, Disciplines, Home, Layout, Schedule, Welcome } from './pages/public'
 import './styles.css'
 
+// En la vista previa publicada como Artifact el hash de la URL no se puede usar: se navega en memoria.
+const Router = import.meta.env.VITE_ROUTER === 'memory' ? MemoryRouter : HashRouter
+
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <StoreProvider>
-      <HashRouter>
+      <Router>
         <Routes>
           <Route path="/" element={<Welcome />} />
           <Route path="/delegados" element={<Manage />} />
@@ -22,7 +25,7 @@ createRoot(document.getElementById('root')!).render(
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </HashRouter>
+      </Router>
     </StoreProvider>
   </React.StrictMode>,
 )
