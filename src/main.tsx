@@ -16,8 +16,8 @@ createRoot(document.getElementById('root')!).render(
           <Route element={<Layout />}>
             <Route path="/inicio" element={<Home />} />
             <Route path="/cronograma" element={<Schedule />} />
-            <Route path="/disciplinas" element={<Disciplines />} />
-            <Route path="/disciplinas/:id" element={<DisciplinePage />} />
+            <Route path="/competencias" element={<Disciplines />} />
+            <Route path="/competencias/:id" element={<DisciplinePage />} />
             <Route path="/anuncios" element={<Announcements />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

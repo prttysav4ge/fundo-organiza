@@ -1,9 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo, STATUS_LABEL } from '../components/ui'
-import { DISCIPLINES, GROUPS, VENUES } from '../data/seed'
-import { actTitle, byStart, discipline, group, isDuel, useStore } from '../data/store'
-import type { Activity, Announcement, Correction, Status } from '../data/types'
+import { DISCIPLINES, EVENT, GROUPS, VENUES } from '../data/seed'
+import { byStart, discipline, fmtDate, group, inscriptionsOpen, teamName, teamsFor, useStore } from '../data/store'
+import type { Activity, Announcement, Correction, Participant, Status } from '../data/types'
+
+const ROSTERED = DISCIPLINES.filter((d) => d.roster)
+const MIN_PLAYERS: Record<string, number> = { futbol: 7, voley: 6, basquet: 5 }
 
 export default function Manage() {
   const { session, logout } = useStore()
@@ -43,10 +46,10 @@ function Login() {
   return (
     <form className="card form narrow" onSubmit={submit}>
       <h1>Acceso de gestión</h1>
-      <p className="muted">Solo para delegados y administración. Los estudiantes no necesitan cuenta.</p>
+      <p className="muted">Solo para delegados de ciclo y la comisión organizadora. Los estudiantes no necesitan cuenta.</p>
       <label>
         Usuario
-        <input value={u} onChange={(e) => setU(e.target.value)} autoComplete="username" required />
+        <input value={u} onChange={(e) => setU(e.target.value)} autoComplete="username" autoCapitalize="none" required />
       </label>
       <label>
         Contraseña
@@ -55,78 +58,158 @@ function Login() {
       {err && <p className="error">{err}</p>}
       <button className="btn primary">Ingresar</button>
       <p className="small muted demo">
-        <b>Prototipo · cuentas de prueba:</b> <code>admin</code> / <code>admin2026</code> · delegado de X ciclo: <code>delegado10</code> /{' '}
-        <code>ciclo10</code> (igual del 1 al 10).
+        <b>Cuentas provisionales:</b> <code>admin</code> / <code>admin2026</code> · delegados <code>delegado1</code>…<code>delegado10</code> con{' '}
+        <code>ciclo1</code>…<code>ciclo10</code> · egresados <code>delegadoe</code> / <code>egresados</code>.
       </p>
     </form>
   )
 }
 
+const PName = ({ p }: { p: Participant }) => (
+  <strong>
+    {p.jersey != null && <span className="num">#{p.jersey} </span>}
+    {p.name}
+    {p.gender === 'F' && <span className="small muted"> · mujer</span>}
+    {p.teamId !== p.groupId && <span className="small muted"> · equipo {p.teamId.slice(1)}</span>}
+  </strong>
+)
+const PBadge = ({ p }: { p: Participant }) => (
+  <span className={`badge ${p.status === 'confirmado' ? 'ok' : 'warn'}`}>{p.status === 'confirmado' ? 'Confirmado' : 'Por confirmar'}</span>
+)
+
 function Delegate({ groupId }: { groupId: string }) {
   const { participants, corrections, addParticipant, requestCorrection } = useStore()
   const g = group(groupId)!
-  const [did, setDid] = useState(DISCIPLINES[0].id)
-  const [name, setName] = useState('')
-  const [jersey, setJersey] = useState('')
+  const [did, setDid] = useState(ROSTERED[0].id)
+  const d = discipline(did)!
+  const rule = d.roster!
+  const teams = teamsFor(did, groupId)
+  const [f, setF] = useState({ name: '', upaoId: '', jersey: '', gender: '', team: '' })
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [asking, setAsking] = useState<string | null>(null)
   const [reason, setReason] = useState('')
-  const d = discipline(did)!
-  const list = participants.filter((p) => p.groupId === groupId && p.disciplineId === did)
+  const open = inscriptionsOpen()
+  const mine = participants.filter((p) => p.groupId === groupId)
+  const list = mine.filter((p) => p.disciplineId === did)
+  const teamId = teams.includes(f.team) ? f.team : teams[0]
   const pendingFor = (pid: string) => corrections.some((c) => c.participantId === pid && c.status === 'pendiente')
+
+  const hints: string[] = []
+  teams.forEach((t) => {
+    const n = list.filter((p) => p.teamId === t)
+    const tag = teams.length > 1 ? ` (equipo ${t.slice(1)})` : ''
+    if (MIN_PLAYERS[did] && n.length < MIN_PLAYERS[did]) hints.push(`Faltan ${MIN_PLAYERS[did] - n.length} para el mínimo de ${MIN_PLAYERS[did]} en cancha${tag}.`)
+    if (did === 'voley' && n.length > 0 && n.filter((p) => p.gender === 'F').length < 2) hints.push('El vóley exige mínimo 2 mujeres en cancha.')
+    if (did === 'gincana' && n.length !== 10) hints.push(`La gincana requiere exactamente 10 personas: llevas ${n.length}.`)
+  })
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    const err = addParticipant({ groupId, disciplineId: did, name, jersey: d.usesJersey ? +jersey : undefined })
+    const err = addParticipant({
+      groupId,
+      teamId,
+      disciplineId: did,
+      name: f.name,
+      upaoId: f.upaoId,
+      jersey: rule.jersey ? +f.jersey : undefined,
+      gender: rule.gender ? (f.gender as 'F' | 'M') || undefined : undefined,
+    })
     setMsg(err ? { ok: false, text: err } : { ok: true, text: 'Participante registrado. Queda pendiente de confirmación.' })
-    if (!err) {
-      setName('')
-      setJersey('')
-    }
+    if (!err) setF({ ...f, name: '', upaoId: '', jersey: '', gender: '' })
   }
 
   return (
     <>
       <h1>Delegado · {g.name}</h1>
-      <p className="muted">Puedes agregar participantes de tu ciclo. Una vez enviados no se editan: solicita la corrección a la administración.</p>
+      <p className="muted">
+        Inscribe a los participantes de tu ciclo ({g.theme}). Una vez enviados no se editan: solicita la corrección a la comisión organizadora.
+      </p>
+      <p className={`card info ${open ? '' : 'closed'}`}>
+        {open ? (
+          <>
+            ⏳ Inscripciones abiertas hasta el <b>{EVENT.deadlineLabel}</b>
+          </>
+        ) : (
+          <>
+            🔒 El plazo de inscripción venció el <b>{EVENT.deadlineLabel}</b> Ya no se aceptan inscripciones ni cambios.
+          </>
+        )}
+      </p>
       <div className="chips">
-        {DISCIPLINES.map((x) => (
-          <button key={x.id} className={`chip big${x.id === did ? ' on' : ''}`} onClick={() => (setDid(x.id), setMsg(null))}>
-            {x.icon} {x.name}
-          </button>
-        ))}
+        {ROSTERED.map((x) => {
+          const n = mine.filter((p) => p.disciplineId === x.id).length
+          return (
+            <button key={x.id} className={`chip big${x.id === did ? ' on' : ''}`} onClick={() => (setDid(x.id), setMsg(null))}>
+              {x.icon} {x.name} <span className="count">{n}</span>
+            </button>
+          )
+        })}
       </div>
 
-      <form className="card form" onSubmit={submit}>
-        <h2>Inscribir en {d.name}</h2>
-        <div className="row">
-          <label className="grow">
-            Nombres y apellidos
-            <input value={name} onChange={(e) => setName(e.target.value)} required />
-          </label>
-          {d.usesJersey && (
-            <label>
-              Dorsal
-              <input type="number" min={1} max={99} value={jersey} onChange={(e) => setJersey(e.target.value)} required style={{ width: 90 }} />
+      {open && (
+        <form className="card form" onSubmit={submit}>
+          <h2>Inscribir en {d.name}</h2>
+          <div className="row">
+            <label className="grow">
+              Nombres y apellidos
+              <input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required />
             </label>
-          )}
-        </div>
-        {msg && <p className={msg.ok ? 'success' : 'error'}>{msg.text}</p>}
-        <button className="btn primary">Enviar inscripción</button>
-      </form>
+            <label>
+              ID UPAO
+              <input inputMode="numeric" value={f.upaoId} onChange={(e) => setF({ ...f, upaoId: e.target.value })} required style={{ width: 140 }} />
+            </label>
+            {rule.jersey && (
+              <label>
+                N.° de polo
+                <input type="number" min={1} max={99} value={f.jersey} onChange={(e) => setF({ ...f, jersey: e.target.value })} required style={{ width: 100 }} />
+              </label>
+            )}
+            {rule.gender && (
+              <label>
+                Sexo
+                <select value={f.gender} onChange={(e) => setF({ ...f, gender: e.target.value })} required>
+                  <option value="">Elegir…</option>
+                  <option value="F">Mujer</option>
+                  <option value="M">Varón</option>
+                </select>
+              </label>
+            )}
+            {teams.length > 1 && (
+              <label>
+                Equipo
+                <select value={teamId} onChange={(e) => setF({ ...f, team: e.target.value })}>
+                  {teams.map((t) => (
+                    <option key={t} value={t}>
+                      {t.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+          {msg && <p className={msg.ok ? 'success' : 'error'}>{msg.text}</p>}
+          <button className="btn primary">Enviar inscripción</button>
+        </form>
+      )}
 
       <h2>
-        Inscritos en {d.name} ({list.length})
+        Inscritos en {d.name} ({list.length}
+        {rule.max ? ` de ${rule.max * teams.length}` : ''})
       </h2>
+      {hints.map((h) => (
+        <p key={h} className="small hint">
+          ⚠️ {h}
+        </p>
+      ))}
       <div className="list">
         {list.map((p) => (
           <div key={p.id} className="card item">
             <div className="item-main">
-              <strong>
-                {p.jersey != null && <span className="num">#{p.jersey} </span>}
-                {p.name}
-              </strong>
-              <span className={`badge ${p.status === 'confirmado' ? 'ok' : 'warn'}`}>{p.status === 'confirmado' ? 'Confirmado' : 'Por confirmar'}</span>
+              <span>
+                <PName p={p} />
+                <span className="small muted"> · ID {p.upaoId}</span>
+              </span>
+              <PBadge p={p} />
             </div>
             {pendingFor(p.id) ? (
               <span className="small muted">Corrección solicitada</span>
@@ -137,7 +220,6 @@ function Delegate({ groupId }: { groupId: string }) {
                   e.preventDefault()
                   requestCorrection(p.id, reason.trim())
                   setAsking(null)
-                  setReason('')
                 }}
               >
                 <input className="grow" placeholder="¿Qué se debe corregir?" value={reason} onChange={(e) => setReason(e.target.value)} required autoFocus />
@@ -153,7 +235,7 @@ function Delegate({ groupId }: { groupId: string }) {
             )}
           </div>
         ))}
-        {!list.length && <p className="muted">Aún no inscribes a nadie en esta disciplina.</p>}
+        {!list.length && <p className="muted">Aún no inscribes a nadie en {d.name}.</p>}
       </div>
     </>
   )
@@ -170,7 +252,7 @@ function Admin() {
   }
   return (
     <>
-      <h1>Administración</h1>
+      <h1>Comisión organizadora</h1>
       <div className="seg wrap" role="tablist">
         {TABS.map((t) => (
           <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>
@@ -184,8 +266,8 @@ function Admin() {
       {tab === 'Correcciones' && <AdminCorrections />}
       {tab === 'Anuncios' && <AdminAnnouncements />}
       <p className="small muted" style={{ marginTop: 32 }}>
-        <button className="btn ghost" onClick={() => confirm('¿Restablecer todos los datos de demostración?') && reset()}>
-          Restablecer datos de demostración
+        <button className="btn ghost danger" onClick={() => confirm('Se borrarán inscripciones, resultados y anuncios de este navegador. ¿Continuar?') && reset()}>
+          Restablecer todo al estado inicial
         </button>
       </p>
     </>
@@ -193,43 +275,142 @@ function Admin() {
 }
 
 function AdminActivities() {
-  const { activities } = useStore()
+  const { activities, bracket, title, setDirect, directOverride, addActivity } = useStore()
   const [open, setOpen] = useState<string | null>(null)
+  const [nf, setNf] = useState({ title: '', venueId: 'escenario', start: '', end: '' })
+  const [err, setErr] = useState('')
   return (
-    <div className="list">
-      {[...activities].sort(byStart).map((a) => (
-        <div key={a.id} className="card item">
-          <button className="item-main as-btn" onClick={() => setOpen(open === a.id ? null : a.id)} aria-expanded={open === a.id}>
-            <strong>
-              {a.start} · {actTitle(a)}
-            </strong>
-            <span className={`badge st-${a.status}`}>{STATUS_LABEL[a.status]}</span>
-          </button>
-          {open === a.id && <ActivityEditor a={a} onDone={() => setOpen(null)} />}
+    <>
+      <div className="card form">
+        <h2>Pase directo a la final</h2>
+        {DISCIPLINES.filter((d) => d.format === 'duelo').map((d) => {
+          const info = bracket.direct[d.id]
+          return (
+            <div key={d.id} className="row">
+              <span className="grow">
+                <b>{d.name}:</b> {info.team ? teamName(info.team) : 'por definir'} <span className="small muted">{info.reason}</span>
+              </span>
+              {info.candidates.length === 3 && (
+                <select value={directOverride[d.id] ?? ''} onChange={(e) => setDirect(d.id, e.target.value)} aria-label={`Pase directo en ${d.name}`}>
+                  <option value="">Según las bases</option>
+                  {info.candidates.map((t) => (
+                    <option key={t} value={t}>
+                      {teamName(t)}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="list">
+        {[...activities].sort(byStart).map((a) => (
+          <div key={a.id} className="card item">
+            <button className="item-main as-btn" onClick={() => setOpen(open === a.id ? null : a.id)} aria-expanded={open === a.id}>
+              <strong>
+                {a.start} · {title(a)}
+              </strong>
+              <span className={`badge st-${a.status}`}>{STATUS_LABEL[a.status]}</span>
+            </button>
+            {open === a.id && <ActivityEditor a={a} onDone={() => setOpen(null)} />}
+          </div>
+        ))}
+      </div>
+
+      <form
+        className="card form"
+        onSubmit={(e) => {
+          e.preventDefault()
+          const res = addActivity(nf)
+          setErr(res ?? '')
+          if (!res) setNf({ ...nf, title: '', start: '', end: '' })
+        }}
+      >
+        <h2>Agregar actividad general</h2>
+        <div className="row">
+          <label className="grow">
+            Nombre
+            <input value={nf.title} onChange={(e) => setNf({ ...nf, title: e.target.value })} required />
+          </label>
+          <label>
+            Lugar
+            <select value={nf.venueId} onChange={(e) => setNf({ ...nf, venueId: e.target.value })}>
+              {VENUES.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Inicio
+            <input type="time" value={nf.start} onChange={(e) => setNf({ ...nf, start: e.target.value })} required />
+          </label>
+          <label>
+            Fin
+            <input type="time" value={nf.end} onChange={(e) => setNf({ ...nf, end: e.target.value })} required />
+          </label>
         </div>
-      ))}
-    </div>
+        {err && <p className="error">{err}</p>}
+        <button className="btn primary">Agregar</button>
+      </form>
+    </>
   )
 }
 
 function ActivityEditor({ a, onDone }: { a: Activity; onDone: () => void }) {
-  const { updateActivity } = useStore()
-  const [f, setF] = useState({ start: a.start, end: a.end, venueId: a.venueId, status: a.status, s0: a.score?.[0] ?? 0, s1: a.score?.[1] ?? 0 })
+  const { updateActivity, removeActivity, bracket } = useStore()
+  const sides = bracket.sides[a.id]
+  const d = discipline(a.disciplineId)
+  const [f, setF] = useState({
+    start: a.start,
+    end: a.end,
+    venueId: a.venueId,
+    status: a.status,
+    s0: a.score?.[0] ?? 0,
+    s1: a.score?.[1] ?? 0,
+    wo: !!a.wo,
+    winner: a.winner ?? '',
+    places: [0, 1, 2, 3].map((i) => a.places?.[i] ?? ''),
+  })
   const [err, setErr] = useState('')
-  const duel = isDuel(a) && a.groupIds.length === 2
+  const isGame = a.disciplineId === 'gincana'
+  const teams = sides?.map((s) => s.team)
+  const ready = !!teams && teams.every(Boolean)
+  const labelled = !!a.sides && 'label' in a.sides[0]
+  const playing = f.status === 'en_curso' || f.status === 'finalizado'
+  const done = f.status === 'finalizado'
+  const tie = f.s0 === f.s1
+
   const save = (e: FormEvent) => {
     e.preventDefault()
-    const withScore = duel && (f.status === 'en_curso' || f.status === 'finalizado')
-    const res = updateActivity(a.id, {
-      start: f.start,
-      end: f.end,
-      venueId: f.venueId,
-      status: f.status,
-      score: withScore ? [f.s0, f.s1] : a.score,
-    })
+    const patch: Partial<Activity> = { start: f.start, end: f.end, venueId: f.venueId, status: f.status }
+    if (sides && playing) {
+      if (!ready && !labelled) return setErr('Aún no se definen los dos equipos de este partido.')
+      if (f.wo) {
+        if (done && !f.winner) return setErr('Indica quién gana por W.O.')
+        Object.assign(patch, { wo: true, winner: f.winner || undefined, score: undefined })
+      } else {
+        if (done && a.disciplineId === 'voley' && Math.max(f.s0, f.s1) !== 2) return setErr('En vóley gana quien llega a 2 sets (2-0 o 2-1).')
+        if (done && tie && d?.unit === 'Puntos') return setErr('En básquet no hay empate: se define por punto de oro.')
+        if (done && tie && d?.unit === 'Sets') return setErr('En vóley no hay empate.')
+        if (done && tie && ready && !f.winner) return setErr('Empate: indica quién ganó en penales.')
+        Object.assign(patch, { wo: false, score: [f.s0, f.s1], winner: tie && f.winner !== 'none' ? f.winner || undefined : undefined })
+      }
+    }
+    if (isGame && done) {
+      const chosen = f.places.filter(Boolean)
+      if (!f.places[0]) return setErr('Indica al menos el 1.er puesto.')
+      if (new Set(chosen).size !== chosen.length) return setErr('Un ciclo no puede ocupar dos puestos en el mismo juego.')
+      patch.places = f.places
+    }
+    const res = updateActivity(a.id, patch)
     if (res) setErr(res)
     else onDone()
   }
+
   return (
     <form className="form" onSubmit={save}>
       <div className="row">
@@ -262,40 +443,96 @@ function ActivityEditor({ a, onDone }: { a: Activity; onDone: () => void }) {
           </select>
         </label>
       </div>
-      {duel && (
+
+      {sides && playing && (
+        <>
+          {ready && (
+            <label className="check">
+              <input type="checkbox" checked={f.wo} onChange={(e) => setF({ ...f, wo: e.target.checked, winner: '' })} /> Partido definido por W.O.
+            </label>
+          )}
+          {!f.wo && (
+            <div className="row">
+              {sides.map((s, i) => (
+                <label key={i}>
+                  {d?.unit} · {s.label}
+                  <input
+                    type="number"
+                    min={0}
+                    value={i ? f.s1 : f.s0}
+                    onChange={(e) => setF({ ...f, [i ? 's1' : 's0']: Math.max(0, Math.floor(+e.target.value)) })}
+                    style={{ width: 120 }}
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+          {ready && done && (f.wo || (tie && d?.unit === 'Goles')) && (
+            <label>
+              {f.wo ? 'Gana por W.O.' : 'Ganador en penales'}
+              <select value={f.winner} onChange={(e) => setF({ ...f, winner: e.target.value })}>
+                <option value="">Elegir…</option>
+                {sides.map((s) => (
+                  <option key={s.team!} value={s.team!}>
+                    {s.label}
+                  </option>
+                ))}
+                {f.wo && <option value="none">Ninguno (doble W.O.)</option>}
+              </select>
+            </label>
+          )}
+        </>
+      )}
+
+      {isGame && done && (
         <div className="row">
-          {a.groupIds.map((gid, i) => (
-            <label key={gid}>
-              Marcador {group(gid)!.name}
-              <input
-                type="number"
-                min={0}
-                value={i ? f.s1 : f.s0}
-                onChange={(e) => setF({ ...f, [i ? 's1' : 's0']: Math.max(0, +e.target.value) })}
-                style={{ width: 110 }}
-              />
+          {f.places.map((val, i) => (
+            <label key={i}>
+              {i + 1}.° puesto
+              <select value={val} onChange={(e) => setF({ ...f, places: f.places.map((x, j) => (j === i ? e.target.value : x)) })}>
+                <option value="">—</option>
+                {GROUPS.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
             </label>
           ))}
         </div>
       )}
+
       {err && <p className="error">{err}</p>}
       <div className="row">
         <button className="btn primary">Guardar cambios</button>
         <button type="button" className="btn ghost" onClick={onDone}>
           Cancelar
         </button>
+        {a.custom && (
+          <button type="button" className="btn ghost danger" onClick={() => confirm('¿Eliminar esta actividad?') && removeActivity(a.id)}>
+            Eliminar
+          </button>
+        )}
       </div>
     </form>
   )
 }
 
 function AdminParticipants() {
-  const { participants, confirmParticipant, removeParticipant } = useStore()
+  const { participants, confirmParticipant, confirmAll, removeParticipant } = useStore()
   const [gid, setGid] = useState('todos')
-  const [onlyPending, setOnlyPending] = useState(true)
-  const list = participants.filter((p) => (gid === 'todos' || p.groupId === gid) && (!onlyPending || p.status === 'pendiente'))
+  const [did, setDid] = useState('todas')
+  const [onlyPending, setOnlyPending] = useState(false)
+  const list = participants.filter(
+    (p) => (gid === 'todos' || p.groupId === gid) && (did === 'todas' || p.disciplineId === did) && (!onlyPending || p.status === 'pendiente'),
+  )
+  const people = new Set(participants.map((p) => p.upaoId)).size
+  const pending = list.filter((p) => p.status === 'pendiente').length
   return (
     <>
+      <p className="card info">
+        <b>{participants.length}</b> inscripciones de <b>{people}</b> personas distintas (lista para el almuerzo, exclusivo para inscritos).
+      </p>
       <div className="filters">
         <select value={gid} onChange={(e) => setGid(e.target.value)} aria-label="Ciclo">
           <option value="todos">Todos los ciclos</option>
@@ -305,20 +542,30 @@ function AdminParticipants() {
             </option>
           ))}
         </select>
+        <select value={did} onChange={(e) => setDid(e.target.value)} aria-label="Disciplina">
+          <option value="todas">Todas las disciplinas</option>
+          {ROSTERED.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+        </select>
         <label className="check">
           <input type="checkbox" checked={onlyPending} onChange={(e) => setOnlyPending(e.target.checked)} /> Solo por confirmar
         </label>
+        {pending > 0 && did === 'todas' && (
+          <button className="btn ghost" onClick={() => confirm(`¿Confirmar las inscripciones pendientes de ${gid === 'todos' ? 'todos los ciclos' : group(gid)!.name}?`) && confirmAll(gid)}>
+            Confirmar todas
+          </button>
+        )}
       </div>
       <div className="list">
         {list.map((p) => (
           <div key={p.id} className="card item">
             <div className="item-main">
-              <strong>
-                {p.jersey != null && <span className="num">#{p.jersey} </span>}
-                {p.name}
-              </strong>
+              <PName p={p} />
               <span className="small muted">
-                {group(p.groupId)!.name} · {discipline(p.disciplineId)!.name}
+                {group(p.groupId)!.name} · {discipline(p.disciplineId)!.name} · ID {p.upaoId}
               </span>
             </div>
             <div className="row">
@@ -327,7 +574,7 @@ function AdminParticipants() {
                   Confirmar
                 </button>
               ) : (
-                <span className="badge ok">Confirmado</span>
+                <PBadge p={p} />
               )}
               <button className="btn ghost danger" onClick={() => confirm(`¿Eliminar la inscripción de ${p.name}?`) && removeParticipant(p.id)}>
                 Eliminar
@@ -358,7 +605,9 @@ function CorrectionItem({ c }: { c: Correction }) {
   const { participants, resolveCorrection } = useStore()
   const p = participants.find((x) => x.id === c.participantId)
   const [name, setName] = useState(p?.name ?? '')
+  const [upaoId, setUpaoId] = useState(p?.upaoId ?? '')
   const [jersey, setJersey] = useState(p?.jersey?.toString() ?? '')
+  const [err, setErr] = useState('')
   if (!p) return null
   const d = discipline(p.disciplineId)!
   return (
@@ -366,7 +615,7 @@ function CorrectionItem({ c }: { c: Correction }) {
       className="card item form"
       onSubmit={(e) => {
         e.preventDefault()
-        resolveCorrection(c.id, { name: name.trim(), jersey: d.usesJersey ? +jersey : undefined })
+        setErr(resolveCorrection(c.id, { name, upaoId: upaoId.trim(), jersey: d.roster!.jersey ? +jersey : undefined }) ?? '')
       }}
     >
       <span className="small muted">
@@ -380,13 +629,18 @@ function CorrectionItem({ c }: { c: Correction }) {
           Nombres y apellidos
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
-        {d.usesJersey && (
+        <label>
+          ID UPAO
+          <input inputMode="numeric" value={upaoId} onChange={(e) => setUpaoId(e.target.value)} required style={{ width: 140 }} />
+        </label>
+        {d.roster!.jersey && (
           <label>
-            Dorsal
-            <input type="number" min={1} max={99} value={jersey} onChange={(e) => setJersey(e.target.value)} required style={{ width: 90 }} />
+            N.° de polo
+            <input type="number" min={1} max={99} value={jersey} onChange={(e) => setJersey(e.target.value)} required style={{ width: 100 }} />
           </label>
         )}
       </div>
+      {err && <p className="error">{err}</p>}
       <div className="row">
         <button className="btn primary">Aplicar y resolver</button>
         <button type="button" className="btn ghost danger" onClick={() => resolveCorrection(c.id, null)}>
@@ -398,7 +652,7 @@ function CorrectionItem({ c }: { c: Correction }) {
 }
 
 function AdminAnnouncements() {
-  const { announcements, addAnnouncement } = useStore()
+  const { announcements, addAnnouncement, removeAnnouncement } = useStore()
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [kind, setKind] = useState<Announcement['kind']>('info')
@@ -433,7 +687,7 @@ function AdminAnnouncements() {
           </select>
         </label>
         <fieldset>
-          <legend>Dirigido a (sin marcar = todos los ciclos)</legend>
+          <legend>Dirigido a (sin marcar = todos)</legend>
           <div className="chips">
             {GROUPS.map((g) => (
               <label key={g.id} className={`chip${targets.includes(g.id) ? ' on' : ''}`}>
@@ -443,7 +697,7 @@ function AdminAnnouncements() {
                   checked={targets.includes(g.id)}
                   onChange={() => setTargets((t) => (t.includes(g.id) ? t.filter((x) => x !== g.id) : [...t, g.id]))}
                 />
-                {g.short}
+                {g.id === 'ce' ? 'Egresados' : g.short}
               </label>
             ))}
           </div>
@@ -454,9 +708,14 @@ function AdminAnnouncements() {
       <div className="list">
         {announcements.map((n) => (
           <div key={n.id} className="card item">
-            <strong>{n.title}</strong>
+            <div className="item-main">
+              <strong>{n.title}</strong>
+              <button className="btn ghost danger" onClick={() => confirm('¿Eliminar este anuncio?') && removeAnnouncement(n.id)}>
+                Eliminar
+              </button>
+            </div>
             <span className="small muted">
-              {n.time} · {n.groupIds.length ? n.groupIds.map((x) => group(x)!.short).join(', ') : 'Todos'}
+              {fmtDate(n.date)} · {n.groupIds.length ? n.groupIds.map((x) => group(x)!.name).join(', ') : 'Todos'}
             </span>
           </div>
         ))}

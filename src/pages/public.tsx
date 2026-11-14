@@ -2,16 +2,22 @@ import { useState } from 'react'
 import { Link, NavLink, Navigate, Outlet, useNavigate, useParams } from 'react-router-dom'
 import FundoMap from '../components/FundoMap'
 import { ActivityCard, AnnouncementCard, Jersey, Logo, STATUS_LABEL } from '../components/ui'
-import { DISCIPLINES, EVENT_NAME, GROUPS } from '../data/seed'
-import { byStart, discipline, group, involves, isDuel, isGeneral, useStore, venue, winnerOf } from '../data/store'
+import { GINCANA_POINTS } from '../data/bracket'
+import { DISCIPLINES, EVENT, GROUPS } from '../data/seed'
+import { byStart, daysToEvent, discipline, group, teamGroup, teamName, teamsFor, useStore, venue } from '../data/store'
 import type { Status } from '../data/types'
 
 const NAV = [
   ['/inicio', '🏠', 'Inicio'],
   ['/cronograma', '🗓️', 'Cronograma'],
-  ['/disciplinas', '🏆', 'Disciplinas'],
+  ['/competencias', '🏆', 'Competencias'],
   ['/anuncios', '📣', 'Anuncios'],
 ]
+
+const countdown = () => {
+  const n = daysToEvent()
+  return n > 1 ? `Faltan ${n} días` : n === 1 ? '¡Es mañana!' : n === 0 ? '¡Es hoy!' : 'Evento finalizado'
+}
 
 export function Welcome() {
   const { setCiclo, cicloId } = useStore()
@@ -19,9 +25,12 @@ export function Welcome() {
   return (
     <div className="welcome">
       <Logo />
-      <p className="eyebrow">{EVENT_NAME}</p>
+      <p className="eyebrow">{EVENT.name}</p>
+      <p className="muted">
+        {EVENT.dateLabel} · {EVENT.hours} · {EVENT.place}
+      </p>
       <h1>¿De qué ciclo eres?</h1>
-      <p className="muted">Elige tu ciclo para ver tus partidos, horarios y canchas. No necesitas cuenta.</p>
+      <p className="muted">Elige tu equipo para ver tus partidos, horarios y canchas. No necesitas cuenta.</p>
       <div className="ciclo-grid">
         {GROUPS.map((g) => (
           <button
@@ -33,8 +42,8 @@ export function Welcome() {
               nav('/inicio')
             }}
           >
-            <b style={{ color: g.color }}>{g.short}</b>
-            <span>ciclo</span>
+            <b>{g.id === 'ce' ? 'Egresados' : g.name}</b>
+            <span>{g.theme}</span>
           </button>
         ))}
       </div>
@@ -47,7 +56,7 @@ export function Welcome() {
 
 export function Layout() {
   const { cicloId, session } = useStore()
-  const g = group(cicloId ?? undefined)
+  const g = group(cicloId)
   if (!g) return <Navigate to="/" replace />
   return (
     <>
@@ -91,17 +100,18 @@ export function Layout() {
 }
 
 export function Home() {
-  const { activities, announcements, cicloId } = useStore()
+  const { activities, announcements, cicloId, plays, isGeneral } = useStore()
   const [sel, setSel] = useState<string | null>(null)
-  const g = group(cicloId!)!
+  const g = group(cicloId)!
   const sorted = [...activities].sort(byStart)
-  const mineDuel = sorted.filter((a) => isDuel(a) && involves(a, g.id))
-  const liveMine = mineDuel.filter((a) => a.status === 'en_curso')
-  const liveGeneral = sorted.filter((a) => isGeneral(a) && a.status === 'en_curso')
-  const upcoming = sorted.filter(
-    (a) => (a.status === 'pendiente' || a.status === 'reprogramado') && (isGeneral(a) || involves(a, g.id)),
-  )
-  const played = mineDuel.filter((a) => a.status === 'finalizado')
+  const mine = sorted.filter((a) => plays(a, g.id))
+  const live = sorted.filter((a) => a.status === 'en_curso')
+  const liveMine = live.filter((a) => plays(a, g.id))
+  const liveOther = live.filter((a) => isGeneral(a))
+  const open = (a: { status: Status }) => a.status === 'pendiente' || a.status === 'reprogramado'
+  const myNext = mine.filter(open)
+  const generalNext = sorted.filter((a) => open(a) && isGeneral(a))
+  const played = mine.filter((a) => a.status === 'finalizado')
   const anns = announcements.filter((n) => !n.groupIds.length || n.groupIds.includes(g.id)).slice(0, 2)
   const atVenue = sel ? sorted.filter((a) => a.venueId === sel) : []
 
@@ -110,10 +120,11 @@ export function Home() {
       <section className="hero card">
         <Jersey g={g} size={84} />
         <div>
-          <h1>
-            {g.ordinal} ciclo
-          </h1>
-          <p className="muted">Temática: {g.theme}</p>
+          <h1>{g.name}</h1>
+          <p className="muted">Lenguaje: {g.theme}</p>
+          <p className="small">
+            <b>{countdown()}</b> · {EVENT.dateLabel}
+          </p>
         </div>
       </section>
 
@@ -136,7 +147,11 @@ export function Home() {
                 ✕
               </button>
             </div>
-            {atVenue.length ? atVenue.map((a) => <ActivityCard key={a.id} a={a} />) : <p className="muted">Sin actividades programadas.</p>}
+            {atVenue.length ? (
+              atVenue.map((a) => <ActivityCard key={a.id} a={a} />)
+            ) : (
+              <p className="muted">{sel === 'piscina' ? 'La natación no está confirmada: depende del permiso para usar la piscina.' : 'Sin actividades programadas.'}</p>
+            )}
           </div>
         )}
       </section>
@@ -152,39 +167,49 @@ export function Home() {
             ))}
           </div>
         )}
+        {live.length > 0 && (
+          <div>
+            <h2>Ahora mismo</h2>
+            {liveMine.length > 0 && <h3 className="sub">De tu ciclo</h3>}
+            {liveMine.map((a) => (
+              <ActivityCard key={a.id} a={a} />
+            ))}
+            {liveOther.length > 0 && <h3 className="sub">Generales</h3>}
+            {liveOther.map((a) => (
+              <ActivityCard key={a.id} a={a} />
+            ))}
+            {liveMine.length + liveOther.length === 0 && <p className="muted">Tu ciclo no tiene actividades en curso.</p>}
+          </div>
+        )}
         <div>
           <h2>
-            Ahora mismo <Link to="/cronograma">Ver cronograma completo</Link>
+            Tus próximos partidos <Link to="/cronograma">Ver cronograma completo</Link>
           </h2>
-          {liveMine.length + liveGeneral.length === 0 && <p className="muted">No hay actividades en curso para tu ciclo.</p>}
-          {liveMine.length > 0 && <h3 className="sub">De tu ciclo</h3>}
-          {liveMine.map((a) => (
+          {myNext.map((a) => (
             <ActivityCard key={a.id} a={a} />
           ))}
-          {liveGeneral.length > 0 && <h3 className="sub">Generales</h3>}
-          {liveGeneral.map((a) => (
-            <ActivityCard key={a.id} a={a} />
-          ))}
+          {!myNext.length && <p className="muted">Tu ciclo no tiene partidos pendientes definidos. Si sigue en carrera, el siguiente aparecerá aquí al definirse la llave.</p>}
         </div>
         <div>
-          <h2>Lo que viene</h2>
-          {upcoming.slice(0, 4).map((a) => (
+          <h2>Actividades generales</h2>
+          {generalNext.slice(0, 5).map((a) => (
             <ActivityCard key={a.id} a={a} />
           ))}
-          {!upcoming.length && <p className="muted">No hay más actividades pendientes.</p>}
+          {!generalNext.length && <p className="muted">No quedan actividades generales pendientes.</p>}
         </div>
-        <div>
-          <h2>Tus resultados</h2>
-          {played.map((a) => (
-            <ActivityCard key={a.id} a={a} />
-          ))}
-          {!played.length && <p className="muted">Tu ciclo aún no termina ningún partido.</p>}
-        </div>
+        {played.length > 0 && (
+          <div>
+            <h2>Tus resultados</h2>
+            {played.map((a) => (
+              <ActivityCard key={a.id} a={a} />
+            ))}
+          </div>
+        )}
         <div>
           <h2>Equipos de tu ciclo</h2>
           <div className="chips">
-            {DISCIPLINES.map((d) => (
-              <Link key={d.id} to={`/disciplinas/${d.id}`} className="chip big">
+            {DISCIPLINES.filter((d) => d.roster).map((d) => (
+              <Link key={d.id} to={`/competencias/${d.id}`} className="chip big">
                 {d.icon} {d.name}
               </Link>
             ))}
@@ -196,16 +221,19 @@ export function Home() {
 }
 
 export function Schedule() {
-  const { activities, cicloId } = useStore()
+  const { activities, cicloId, plays, isGeneral } = useStore()
   const [onlyMine, setOnlyMine] = useState(false)
   const [status, setStatus] = useState<Status | 'todos'>('todos')
   const list = [...activities]
     .sort(byStart)
-    .filter((a) => !onlyMine || isGeneral(a) || involves(a, cicloId!))
+    .filter((a) => !onlyMine || isGeneral(a) || plays(a, cicloId!))
     .filter((a) => status === 'todos' || a.status === status)
   return (
     <div className="page">
       <h1>Cronograma</h1>
+      <p className="muted">
+        {EVENT.dateLabel} · {EVENT.place}. Los partidos empiezan a la hora programada, sin tolerancia.
+      </p>
       <div className="filters">
         <div className="seg" role="group" aria-label="Alcance">
           <button className={!onlyMine ? 'on' : ''} onClick={() => setOnlyMine(false)}>
@@ -236,19 +264,21 @@ export function Disciplines() {
   const { activities } = useStore()
   return (
     <div className="page">
-      <h1>Disciplinas</h1>
+      <h1>Competencias</h1>
       <div className="disc-grid">
         {DISCIPLINES.map((d) => {
-          const acts = activities.filter((a) => a.disciplineId === d.id)
-          const live = acts.filter((a) => a.status === 'en_curso').length
+          const live = activities.filter((a) => a.disciplineId === d.id && a.status === 'en_curso').length
           return (
             <Link key={d.id} to={d.id} className="card disc">
               <span className="disc-icon">{d.icon}</span>
               <strong>{d.name}</strong>
-              <span className="muted small">
-                {acts.length} {d.format === 'duelo' ? 'partidos' : 'actividades'}
-                {live > 0 && ` · ${live} en curso`}
-              </span>
+              <span className="muted small">{d.summary}</span>
+              {live > 0 && (
+                <span className="badge st-en_curso">
+                  <i className="dot" />
+                  {live} en curso
+                </span>
+              )}
             </Link>
           )
         })}
@@ -259,113 +289,131 @@ export function Disciplines() {
 
 export function DisciplinePage() {
   const { id } = useParams()
-  const { activities, participants, cicloId } = useStore()
+  const { activities, participants, cicloId, bracket } = useStore()
   const [gid, setGid] = useState(cicloId!)
   const d = discipline(id)
-  if (!d) return <Navigate to="/disciplinas" replace />
+  if (!d) return <Navigate to="/competencias" replace />
   const acts = activities.filter((a) => a.disciplineId === d.id).sort(byStart)
-  const roster = participants.filter((p) => p.disciplineId === d.id && p.groupId === gid)
-  const winners = acts.map(winnerOf).filter(Boolean) as string[]
-  const table: Record<string, number> = {}
-  acts.forEach((a) => Object.entries(a.points ?? {}).forEach(([k, v]) => (table[k] = (table[k] ?? 0) + v)))
-  const ranking = Object.entries(table).sort((a, b) => b[1] - a[1])
+  const roster = participants.filter((p) => p.disciplineId === d.id && p.groupId === gid).sort((a, b) => a.teamId.localeCompare(b.teamId) || (a.jersey ?? 0) - (b.jersey ?? 0))
+  const multi = teamsFor(d.id, gid).length > 1
+  const final = acts.find((a) => a.stage === 'Final')
+  const champion = final?.status === 'finalizado' ? bracket.winner[final.id] : null
+  const direct = bracket.direct[d.id]
+  const ginChampion = d.id === 'gincana' && bracket.gincanaDone ? bracket.gincana[0] : null
 
   return (
     <div className="page">
-      <Link to="/disciplinas" className="link">
-        ← Disciplinas
+      <Link to="/competencias" className="link">
+        ← Competencias
       </Link>
       <h1>
         {d.icon} {d.name}
       </h1>
+      <p className="muted">{d.summary}</p>
 
-      {d.format === 'duelo' ? (
-        <>
-          <h2>Ganadores hasta ahora</h2>
-          {winners.length ? (
-            <div className="chips">
-              {winners.map((w, i) => (
-                <span key={i} className="chip">
-                  <i className="swatch" style={{ background: group(w)!.color }} />
-                  {group(w)!.name}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="muted">Aún no hay partidos finalizados.</p>
-          )}
-        </>
-      ) : (
+      {champion && (
+        <p className="champion">
+          🏆 Campeón: <b>{teamName(champion)}</b> ({group(teamGroup(champion))!.theme})
+        </p>
+      )}
+      {ginChampion && (
+        <p className="champion">
+          🏆 Ganador de la gincana: <b>{group(ginChampion.group)!.name}</b>
+        </p>
+      )}
+
+      <details className="card rules">
+        <summary>Reglas principales</summary>
+        <ul>
+          {d.rules.map((r, i) => (
+            <li key={i}>{r}</li>
+          ))}
+        </ul>
+      </details>
+
+      {d.format === 'duelo' && direct && (
+        <p className="card info">
+          <b>Pase directo a la final:</b> {direct.team ? teamName(direct.team) : 'por definir'}. <span className="muted">{direct.reason}</span>
+        </p>
+      )}
+
+      {d.format === 'puntos' && (
         <>
           <h2>Tabla de puntos</h2>
-          {ranking.length ? (
+          {bracket.gincana.length ? (
             <table className="tbl">
               <thead>
                 <tr>
                   <th>#</th>
                   <th>Ciclo</th>
+                  <th>1.os puestos</th>
                   <th>Puntos</th>
                 </tr>
               </thead>
               <tbody>
-                {ranking.map(([k, v], i) => (
-                  <tr key={k} className={k === cicloId ? 'hl' : ''}>
+                {bracket.gincana.map((r, i) => (
+                  <tr key={r.group} className={r.group === cicloId ? 'hl' : ''}>
                     <td>{i + 1}</td>
-                    <td>{group(k)!.name}</td>
-                    <td>{v}</td>
+                    <td>{group(r.group)!.name}</td>
+                    <td>{r.firsts}</td>
+                    <td className="num">{r.points}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           ) : (
-            <p className="muted">Todavía no se registran puntajes.</p>
+            <p className="muted">Todavía no se registran puntajes. Cada juego da {GINCANA_POINTS.join(', ')} puntos a los cuatro primeros.</p>
           )}
         </>
       )}
 
-      <h2>{d.format === 'duelo' ? 'Partidos' : 'Programación'}</h2>
+      {acts.length > 0 && <h2>{d.format === 'duelo' ? 'Fixture' : d.format === 'puntos' ? 'Juegos' : 'Programación'}</h2>}
       {acts.map((a) => (
         <ActivityCard key={a.id} a={a} />
       ))}
 
-      <h2>Participantes inscritos</h2>
-      <select value={gid} onChange={(e) => setGid(e.target.value)} aria-label="Ciclo">
-        {GROUPS.map((g) => (
-          <option key={g.id} value={g.id}>
-            {g.name}
-          </option>
-        ))}
-      </select>
-      <table className="tbl">
-        <thead>
-          <tr>
-            {d.usesJersey && <th>Dorsal</th>}
-            <th>Nombres y apellidos</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          {roster.map((p) => (
-            <tr key={p.id}>
-              {d.usesJersey && <td className="num">{p.jersey}</td>}
-              <td>{p.name}</td>
-              <td>
-                <span className={`badge ${p.status === 'confirmado' ? 'ok' : 'warn'}`}>
-                  {p.status === 'confirmado' ? 'Confirmado' : 'Por confirmar'}
-                </span>
-              </td>
-            </tr>
-          ))}
-          {!roster.length && (
-            <tr>
-              <td colSpan={3} className="muted">
-                Sin inscritos todavía.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-      <p className="small muted">¿Ves un error en tu nombre o dorsal? Avísale a tu delegado para que solicite la corrección.</p>
+      {d.roster && (
+        <>
+          <h2>Inscritos</h2>
+          <select value={gid} onChange={(e) => setGid(e.target.value)} aria-label="Ciclo">
+            {GROUPS.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+          <table className="tbl">
+            <thead>
+              <tr>
+                {d.roster.jersey && <th>N.°</th>}
+                <th>Nombres y apellidos</th>
+                {multi && <th>Equipo</th>}
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {roster.map((p) => (
+                <tr key={p.id}>
+                  {d.roster!.jersey && <td className="num">{p.jersey}</td>}
+                  <td>{p.name}</td>
+                  {multi && <td>{p.teamId.slice(1)}</td>}
+                  <td>
+                    <span className={`badge ${p.status === 'confirmado' ? 'ok' : 'warn'}`}>{p.status === 'confirmado' ? 'Confirmado' : 'Por confirmar'}</span>
+                  </td>
+                </tr>
+              ))}
+              {!roster.length && (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    Sin inscritos todavía.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <p className="small muted">¿Ves un error en tu nombre o número? Avísale a tu delegado antes del cierre de inscripciones ({EVENT.deadlineLabel}).</p>
+        </>
+      )}
     </div>
   )
 }

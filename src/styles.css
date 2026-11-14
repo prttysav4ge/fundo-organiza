@@ -195,3 +195,28 @@ legend { font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; }
 @media (prefers-reduced-motion: reduce) {
   .dot, .pulse { animation: none; }
 }
+
+/* v2: datos reales del evento */
+.ciclo-grid { grid-template-columns: repeat(3, 1fr); max-width: 480px; }
+.ciclo-grid button { padding: 10px 4px; gap: 2px; color: var(--ink); }
+.ciclo-grid button b { font-size: 1rem; }
+.hero h1 { font-size: 1.8rem; }
+.team small { color: var(--muted); font-weight: 500; margin-left: 6px; font-size: 0.78rem; }
+.team.tbd { color: var(--muted); font-weight: 500; font-style: italic; }
+.team.win::after { margin-left: 6px; }
+.team b { order: 3; }
+.result { color: #17703a; font-weight: 700; }
+.places { margin: 4px 0 0; padding-left: 22px; font-size: 0.9rem; }
+.places li:first-child { font-weight: 800; }
+.champion { background: #fff6ec; border: 2px solid var(--orange); border-radius: 12px; padding: 12px 14px; font-size: 1.05rem; margin: 12px 0; }
+.rules { margin: 12px 0; }
+.rules summary { font-weight: 700; cursor: pointer; }
+.rules ul { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 6px; font-size: 0.93rem; }
+.info { margin: 12px 0; font-size: 0.93rem; }
+.info.closed { border-color: #b42318; background: #fff5f4; }
+.hint { color: #9a4a00; font-weight: 600; }
+.chip .count { margin-left: 8px; }
+.disc .badge { justify-self: start; margin-top: 4px; }
+.tbl td.num { width: 56px; }
+@media (min-width: 480px) { .ciclo-grid { grid-template-columns: repeat(4, 1fr); } }
+.hero h1 { text-transform: none; }

@@ -1,11 +1,11 @@
 import type { ReactElement } from 'react'
 import { VENUES } from '../data/seed'
-import { involves, useStore } from '../data/store'
+import { useStore } from '../data/store'
 
 // Croquis interactivo del Fundo. Cada zona es un botón; las posiciones de las
 // etiquetas se definen aquí para poder cambiar de mapa en otros eventos.
 const LABEL: Record<string, [number, number]> = {
-  local: [262, 122],
+  escenario: [262, 122],
   voley: [486, 143],
   basquet: [616, 143],
   cancha1: [383, 328],
@@ -21,10 +21,10 @@ interface Props {
 }
 
 export default function FundoMap({ selected, onSelect }: Props) {
-  const { activities, cicloId } = useStore()
+  const { activities, cicloId, plays } = useStore()
   const live = (v: string) => activities.some((a) => a.venueId === v && a.status === 'en_curso')
   const mine = (v: string) =>
-    !!cicloId && activities.some((a) => a.venueId === v && involves(a, cicloId) && a.status !== 'finalizado' && a.status !== 'cancelado')
+    !!cicloId && activities.some((a) => a.venueId === v && plays(a, cicloId) && a.status !== 'finalizado' && a.status !== 'cancelado')
 
   const zone = (id: string, shape: ReactElement) => {
     const v = VENUES.find((x) => x.id === id)!
@@ -113,7 +113,7 @@ export default function FundoMap({ selected, onSelect }: Props) {
       <rect x="262" y="250" width="418" height="290" fill="url(#grass)" />
 
       {zone(
-        'local',
+        'escenario',
         <g transform="rotate(42 178 170)">
           <rect className="hit" x="112" y="104" width="132" height="132" fill="#b3aea6" stroke="#6b4a33" strokeWidth="5" />
           <path d="M112 104h76l-22 40-54 20Z" fill="#8a5a2e" />

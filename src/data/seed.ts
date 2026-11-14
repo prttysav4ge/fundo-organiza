@@ -1,37 +1,154 @@
-import type { Activity, Discipline, EventData, Group, Participant, Venue } from './types'
+import type { Activity, Discipline, EventData, Group, Side, Venue } from './types'
 
-// DATOS DE DEMOSTRACIÓN. Nombres, temáticas, horarios y resultados son inventados.
+// Datos tomados de las Bases del Día de Integración ICSI – ISIA 2026.
 
-export const EVENT_NAME = 'Día de Integración · Ing. de Sistemas e IA'
+export const EVENT = {
+  name: 'Día de Integración ICSI – ISIA 2026',
+  dateLabel: 'Sábado 21 de noviembre de 2026',
+  hours: '8:00 a. m. – 4:00 p. m.',
+  place: 'Fundo UPAO',
+  day: '2026-11-21',
+  /** Cierre de inscripciones: domingo 15 de noviembre, 10:00 p. m. (hora de Perú). */
+  deadline: '2026-11-15T22:00:00-05:00',
+  deadlineLabel: 'domingo 15 de noviembre, 10:00 p. m.',
+}
 
-const g = (n: number, short: string, theme: string, color: string): Group => ({
-  id: `c${n}`,
-  name: `${short} ciclo`,
-  short,
-  ordinal: `${n}°`,
-  theme,
-  color,
-})
+const ORD = ['1.er', '2.°', '3.er', '4.°', '5.°', '6.°', '7.°', '8.°', '9.°', '10.°']
+const LANG: [string, string, string][] = [
+  ['Java', '#e76f00', '#fff'],
+  ['JavaScript', '#f2d21b', '#2b2400'],
+  ['C++', '#00599c', '#fff'],
+  ['Ruby', '#cc342d', '#fff'],
+  ['C#', '#68217a', '#fff'],
+  ['TypeScript', '#3178c6', '#fff'],
+  ['Assembly', '#5c6470', '#fff'],
+  ['Python', '#2f6f9f', '#ffd43b'],
+  ['Rust', '#a0410d', '#fff'],
+  ['PHP', '#6a6fb0', '#fff'],
+]
 
 export const GROUPS: Group[] = [
-  g(1, 'I', 'Scratch', '#f59e0b'),
-  g(2, 'II', 'Python', '#2f7dd1'),
-  g(3, 'III', 'Java', '#d9482b'),
-  g(4, 'IV', 'C++', '#0e7490'),
-  g(5, 'V', 'JavaScript', '#b88a00'),
-  g(6, 'VI', 'Linux', '#374151'),
-  g(7, 'VII', 'Kotlin', '#9333ea'),
-  g(8, 'VIII', 'Docker', '#0284c7'),
-  g(9, 'IX', 'Rust', '#b45309'),
-  g(10, 'X', 'php', '#5b4bc4'),
+  ...LANG.map(([theme, color, ink], i) => ({ id: `c${i + 1}`, name: `${ORD[i]} ciclo`, short: `${i + 1}`, theme, color, ink })),
+  { id: 'ce', name: 'Egresados', short: 'E', theme: 'Swift', color: '#f05138', ink: '#fff' },
+]
+
+/** Equipos por disciplina cuando un grupo lleva más de uno (fútbol del 1.er ciclo). */
+export const TEAMS: Record<string, Record<string, string[]>> = { futbol: { c1: ['c1.1', 'c1.2'] } }
+
+const elim = 'Eliminación directa. De los tres ganadores de la 2.ª ronda, uno pasa directo a la final y los otros dos juegan la semifinal.'
+const common = [
+  'Sin tolerancia: el equipo que no esté completo a la hora programada pierde por W.O.',
+  'Todos juegan con el polo de su ciclo y un número distinto dentro del equipo.',
+  'Antes de cada partido se muestra el carnet universitario o el campus virtual.',
 ]
 
 export const DISCIPLINES: Discipline[] = [
-  { id: 'futbol', name: 'Fútbol', icon: '⚽', format: 'duelo', usesJersey: true },
-  { id: 'voley', name: 'Vóley', icon: '🏐', format: 'duelo', usesJersey: true },
-  { id: 'basquet', name: 'Básquet', icon: '🏀', format: 'duelo', usesJersey: true },
-  { id: 'ajedrez', name: 'Ajedrez', icon: '♟️', format: 'puntos', usesJersey: false },
-  { id: 'gincana', name: 'Gincana', icon: '🎯', format: 'puntos', usesJersey: false },
+  {
+    id: 'futbol',
+    name: 'Fútbol',
+    icon: '⚽',
+    format: 'duelo',
+    unit: 'Goles',
+    roster: { max: 10, jersey: true, sport: true },
+    summary: '12 equipos (el 1.er ciclo con dos), solo varones. Canchas 1, 2 y 3.',
+    rules: [
+      elim,
+      '7 jugadores en cancha (6 + arquero) y hasta 3 suplentes.',
+      'Dos tiempos de 15 minutos con 3 de descanso. Cambios ilimitados con reingreso.',
+      'Empate: penales a muerte súbita desde el primer tiro.',
+      'Pase directo: mayor diferencia de goles en su partido de 2.ª ronda (los penales no cuentan); si hay empate, mejor puesto en la gincana.',
+      'Tarjeta roja: sale sin reemplazo y no juega más fútbol en el torneo.',
+      ...common,
+    ],
+  },
+  {
+    id: 'voley',
+    name: 'Vóley',
+    icon: '🏐',
+    format: 'duelo',
+    unit: 'Sets',
+    roster: { max: 8, jersey: true, gender: true, sport: true },
+    summary: '11 equipos mixtos. El 1.er ciclo pasa directo a la 2.ª ronda por sorteo.',
+    rules: [
+      elim,
+      '6 jugadores en cancha y hasta 2 suplentes, con mínimo 2 mujeres en cancha todo el partido.',
+      'Gana quien gane 2 sets: 1.° y 2.° a 15 puntos, 3.° a 10; siempre con 2 de diferencia.',
+      'Las horas son aproximadas: cada partido empieza al terminar el anterior, nunca antes de la hora indicada.',
+      'Pase directo: menos sets perdidos en el torneo (el 1.er ciclo no puede recibirlo); si hay empate, mejor puesto en la gincana.',
+      'Tarjeta roja: sale sin reemplazo y no juega más vóley en el torneo.',
+      ...common,
+    ],
+  },
+  {
+    id: 'basquet',
+    name: 'Básquet',
+    icon: '🏀',
+    format: 'duelo',
+    unit: 'Puntos',
+    roster: { max: 8, jersey: true, sport: true },
+    summary: '11 equipos, solo varones. El 7.° ciclo pasa directo a la 2.ª ronda por sorteo.',
+    rules: [
+      elim,
+      '5 jugadores en cancha y hasta 3 suplentes.',
+      'Dos tiempos de 10 minutos con 3 de descanso, a reloj corrido.',
+      'Empate: punto de oro (gana el primero que anote).',
+      'Con 5 faltas personales el jugador sale y puede ser reemplazado.',
+      'Pase directo: mayor diferencia de puntos en el torneo (el 7.° ciclo no puede recibirlo); si hay empate, mejor puesto en la gincana.',
+      ...common,
+    ],
+  },
+  {
+    id: 'gincana',
+    name: 'Gincana',
+    icon: '🎯',
+    format: 'puntos',
+    roster: { max: 10, jersey: false, sport: false },
+    summary: '5 juegos seguidos en la cancha 4, de 10:30 a 11:50 a. m.',
+    rules: [
+      'Cada ciclo inscribe exactamente 10 personas que no estén en fútbol, vóley ni básquet.',
+      'Cada persona participa en máximo 2 juegos.',
+      'Puntaje por juego: 1.° puesto 5 puntos, 2.° 3, 3.° 2 y 4.° 1.',
+      'Gana el ciclo con más puntos. Desempate: más primeros puestos y, si persiste, un jalón de soga.',
+      'La tabla final también desempata el pase directo a la final en fútbol, vóley y básquet.',
+    ],
+  },
+  {
+    id: 'futbol_damas',
+    name: 'Fútbol damas',
+    icon: '⚽',
+    format: 'partido',
+    unit: 'Goles',
+    roster: { jersey: true, sport: false },
+    summary: 'Un solo partido entre dos equipos de alumnas de distintos ciclos. Cancha 2, 11:20 a. m.',
+    rules: ['Mismas reglas del fútbol.', 'No cuenta para el límite de 2 deportes.', 'No otorga trofeo.'],
+  },
+  {
+    id: 'basquet_damas',
+    name: 'Básquet damas',
+    icon: '🏀',
+    format: 'partido',
+    unit: 'Puntos',
+    roster: { jersey: true, sport: false },
+    summary: 'Un solo partido entre dos equipos de alumnas de distintos ciclos. Cancha de vóley, 12:55 p. m.',
+    rules: ['Mismas reglas del básquet.', 'No cuenta para el límite de 2 deportes.', 'No otorga trofeo.'],
+  },
+  {
+    id: 'concurso',
+    name: 'Concurso tecnológico',
+    icon: '💡',
+    format: 'info',
+    summary: 'Premio a la Excelencia en Creación Tecnológica Estudiantil. Ganador: sábado 21, 1:45 p. m., en el escenario.',
+    rules: [
+      'Postulan estudiantes de la carrera, individual o en equipo, con un proyecto propio (los egresados no participan).',
+      'Postulación: del 13 al miércoles 18 de noviembre, 11:59 p. m.',
+      'Votación estudiantil: del lunes 16 al jueves 19 de noviembre, 10:00 p. m. Un voto por persona por proyecto, con ID UPAO.',
+      'Los 5 proyectos más votados pasan a la evaluación del jurado (viernes 20).',
+      'El proyecto debe funcionar cuando el jurado lo pruebe; si no, queda descalificado.',
+      'Criterios: potencial e impacto 35 %, concepto y problema 30 %, originalidad 20 %, experiencia de uso y diseño 15 %.',
+      'Jurado: dos representantes del DNT Hub Digital UPAO y el Ing. Leturia.',
+      'Premio: diploma. El ganador debe estar presente y con el polo de su ciclo.',
+    ],
+  },
 ]
 
 export const VENUES: Venue[] = [
@@ -41,107 +158,149 @@ export const VENUES: Venue[] = [
   { id: 'cancha4', name: 'Cancha 4', color: '#f7d54a', text: '#3f3300' },
   { id: 'voley', name: 'Vóley', color: '#7c4ddb', text: '#ffffff' },
   { id: 'basquet', name: 'Básquet', color: '#14308f', text: '#ffffff' },
-  { id: 'local', name: 'Local de actividades', color: '#f9914a', text: '#3d1c00' },
+  { id: 'escenario', name: 'Escenario', color: '#f9914a', text: '#3d1c00' },
   { id: 'piscina', name: 'Piscina', color: '#2a8fd6', text: '#ffffff' },
+  { id: 'fundo', name: 'Fundo UPAO', color: '#8792a6', text: '#ffffff' },
 ]
 
-let n = 0
-const act = (a: Omit<Activity, 'id'>): Activity => ({ id: `a${++n}`, ...a })
-const duel = (
-  disciplineId: string,
-  venueId: string,
-  start: string,
-  end: string,
-  a: number,
-  b: number,
-  status: Activity['status'],
-  score?: [number, number],
-  extra: Partial<Activity> = {},
-) =>
-  act({
-    title: '',
-    disciplineId,
-    venueId,
+export const R1 = '1.ª ronda'
+export const R2 = '2.ª ronda'
+
+const t = (x: number | string): Side => ({ team: `c${x}` })
+const w = (id: string): Side => ({ winner: id })
+const semi = (of: string): [Side, Side] => [{ slot: 'semiA', of }, { slot: 'semiB', of }]
+
+type Row = [string, [Side, Side], string, string, string]
+const matches = (d: string, pre: string, rows: Row[], venue?: string, approx = false): Activity[] =>
+  rows.map(([stage, sides, start, end, v], i) => ({
+    id: `${pre}${i + 1}`,
+    code: `P${i + 1}`,
+    title: stage === 'Final' || stage === 'Semifinal' ? stage : '',
+    disciplineId: d,
+    venueId: venue ?? v,
     start,
     end,
-    groupIds: [`c${a}`, `c${b}`],
-    status,
-    score,
-    stage: 'Primera ronda',
-    ...extra,
-  })
+    approx,
+    sides,
+    status: 'pendiente',
+    stage,
+  }))
+
+const general = (id: string, title: string, venueId: string, start: string, end: string, extra: Partial<Activity> = {}): Activity => ({
+  id,
+  title,
+  venueId,
+  start,
+  end,
+  status: 'pendiente',
+  ...extra,
+})
 
 const ACTIVITIES: Activity[] = [
-  act({ title: 'Inauguración y bienvenida', venueId: 'local', start: '08:30', end: '09:00', groupIds: [], status: 'finalizado' }),
-
-  duel('futbol', 'cancha1', '09:00', '09:40', 1, 2, 'finalizado', [2, 1]),
-  duel('futbol', 'cancha2', '09:00', '09:40', 3, 4, 'finalizado', [0, 3]),
-  duel('futbol', 'cancha3', '09:00', '09:40', 5, 6, 'finalizado', [2, 0]),
-  duel('futbol', 'cancha4', '09:00', '09:40', 7, 8, 'finalizado', [1, 2]),
-  duel('basquet', 'basquet', '09:00', '09:45', 10, 8, 'finalizado', [24, 18]),
-  duel('voley', 'voley', '09:00', '09:45', 1, 2, 'finalizado', [2, 0]),
-
-  duel('futbol', 'cancha1', '10:00', '10:40', 10, 9, 'en_curso', [1, 0]),
-  duel('voley', 'voley', '10:10', '10:55', 10, 5, 'en_curso', [1, 0]),
-  duel('basquet', 'basquet', '10:00', '10:45', 3, 5, 'en_curso', [10, 12]),
-  act({
-    title: 'Ajedrez · Ronda 1',
-    disciplineId: 'ajedrez',
-    venueId: 'local',
-    start: '10:00',
-    end: '11:00',
-    groupIds: [],
-    status: 'en_curso',
-    points: { c10: 2, c7: 2, c3: 1, c5: 1, c1: 0, c8: 0 },
-  }),
-
-  duel('futbol', 'cancha2', '10:50', '11:30', 2, 4, 'pendiente', undefined, { stage: 'Cuartos de final' }),
-  duel('basquet', 'basquet', '11:00', '11:45', 1, 6, 'pendiente'),
-  duel('voley', 'voley', '11:30', '12:15', 3, 7, 'reprogramado', undefined, { note: 'Antes programado para las 10:40' }),
-  act({ title: 'Gincana de integración', disciplineId: 'gincana', venueId: 'local', start: '11:00', end: '12:00', groupIds: [], status: 'pendiente' }),
-  duel('futbol', 'cancha3', '11:40', '12:20', 5, 8, 'pendiente', undefined, { stage: 'Cuartos de final' }),
-  act({ title: 'Juegos acuáticos', venueId: 'piscina', start: '12:00', end: '13:00', groupIds: [], status: 'pendiente' }),
-  act({ title: 'Almuerzo de confraternidad', venueId: 'local', start: '13:00', end: '14:00', groupIds: [], status: 'pendiente' }),
-  act({ title: 'Semifinal 1', disciplineId: 'futbol', venueId: 'cancha1', start: '14:15', end: '14:55', groupIds: [], status: 'pendiente', stage: 'Semifinal' }),
-  act({ title: 'Semifinal 2', disciplineId: 'futbol', venueId: 'cancha4', start: '14:15', end: '14:55', groupIds: [], status: 'pendiente', stage: 'Semifinal' }),
-  act({ title: 'Final de básquet', disciplineId: 'basquet', venueId: 'basquet', start: '15:00', end: '15:45', groupIds: [], status: 'pendiente', stage: 'Final' }),
-  act({ title: 'Final de vóley', disciplineId: 'voley', venueId: 'voley', start: '15:00', end: '15:45', groupIds: [], status: 'pendiente', stage: 'Final' }),
-  act({ title: 'Final de fútbol', disciplineId: 'futbol', venueId: 'cancha1', start: '16:00', end: '16:50', groupIds: [], status: 'pendiente', stage: 'Final' }),
-  act({ title: 'Premiación y clausura', venueId: 'local', start: '17:00', end: '17:30', groupIds: [], status: 'pendiente' }),
+  general('bus1', 'Llegada en bus', 'fundo', '07:00', '08:00'),
+  general('desfile', 'Desfile de los ciclos', 'cancha4', '08:10', '08:50', { note: 'Cada ciclo presenta a su rey, su mascota y su barra.' }),
+  ...matches('futbol', 'f', [
+    [R1, [t('1.1'), t('1.2')], '09:00', '09:35', 'cancha1'],
+    [R1, [t(2), t(4)], '09:00', '09:35', 'cancha2'],
+    [R1, [t(3), t(7)], '09:00', '09:35', 'cancha3'],
+    [R1, [t(5), t('e')], '09:45', '10:20', 'cancha1'],
+    [R1, [t(6), t(10)], '09:45', '10:20', 'cancha2'],
+    [R1, [t(8), t(9)], '09:45', '10:20', 'cancha3'],
+    [R2, [w('f1'), w('f2')], '10:30', '11:05', 'cancha1'],
+    [R2, [w('f3'), w('f4')], '10:40', '11:15', 'cancha2'],
+    [R2, [w('f5'), w('f6')], '10:40', '11:15', 'cancha3'],
+    ['Semifinal', semi('futbol'), '12:00', '12:35', 'cancha1'],
+    ['Final', [w('f10'), { slot: 'direct', of: 'futbol' }], '13:00', '13:35', 'cancha1'],
+  ]),
+  ...matches(
+    'voley',
+    'v',
+    [
+      [R1, [t(2), t('e')], '09:00', '09:20', ''],
+      [R1, [t(6), t(10)], '09:20', '09:40', ''],
+      [R1, [t(7), t(8)], '09:40', '10:00', ''],
+      [R1, [t(4), t(5)], '10:00', '10:20', ''],
+      [R1, [t(3), t(9)], '10:20', '10:40', ''],
+      [R2, [w('v1'), w('v2')], '10:40', '11:00', ''],
+      [R2, [w('v3'), w('v4')], '11:00', '11:20', ''],
+      [R2, [w('v5'), t(1)], '11:20', '11:40', ''],
+      ['Semifinal', semi('voley'), '12:00', '12:30', ''],
+      ['Final', [w('v9'), { slot: 'direct', of: 'voley' }], '12:30', '12:50', ''],
+    ],
+    'voley',
+    true,
+  ),
+  ...matches(
+    'basquet',
+    'b',
+    [
+      [R1, [t(8), t(10)], '09:00', '09:25', ''],
+      [R1, [t(3), t(9)], '09:25', '09:50', ''],
+      [R1, [t(6), t('e')], '09:50', '10:15', ''],
+      [R1, [t(4), t(5)], '10:15', '10:40', ''],
+      [R1, [t(1), t(2)], '10:40', '11:05', ''],
+      [R2, [w('b1'), w('b2')], '11:05', '11:30', ''],
+      [R2, [w('b3'), w('b4')], '11:30', '11:55', ''],
+      [R2, [w('b5'), t(7)], '11:55', '12:20', ''],
+      ['Semifinal', semi('basquet'), '12:30', '12:55', ''],
+      ['Final', [w('b9'), { slot: 'direct', of: 'basquet' }], '13:00', '13:30', ''],
+    ],
+    'basquet',
+  ),
+  ...(
+    [
+      ['Jalar la soga', '10:30', '10:55', '5 personas por ciclo. Eliminación con un solo jalón de máximo 90 segundos.'],
+      ['Carrera de huevos', '11:00', '11:08', '3 personas por ciclo. Relevo con los 11 ciclos a la vez.'],
+      ['Carrera de pies atados', '11:10', '11:22', '3 personas atadas juntas. Dos series por tiempo.'],
+      ['Carrera de sacos', '11:25', '11:32', '3 personas por ciclo. Relevo con los 11 ciclos a la vez.'],
+      ['Tutti frutti con sacos', '11:35', '11:50', '5 personas por ciclo. Gana quien complete primero las 5 categorías.'],
+    ] as const
+  ).map(([title, start, end, note], i) => general(`g${i + 1}`, title, 'cancha4', start, end, { disciplineId: 'gincana', note, stage: `Juego ${i + 1} de 5` })),
+  general('fd', 'Fútbol damas', 'cancha2', '11:20', '11:45', { disciplineId: 'futbol_damas', sides: [{ label: 'Equipo A' }, { label: 'Equipo B' }] }),
+  general('bd', 'Básquet damas', 'voley', '12:55', '13:20', { disciplineId: 'basquet_damas', sides: [{ label: 'Equipo A' }, { label: 'Equipo B' }] }),
+  general('concurso', 'Anuncio del ganador del concurso', 'escenario', '13:45', '14:00', { disciplineId: 'concurso' }),
+  general('almuerzo', 'Almuerzo y premiación', 'escenario', '14:00', '15:00', { note: 'Almuerzo exclusivo para inscritos. Se entregan los trofeos a los campeones.' }),
+  general('baileton', 'Bailetón', 'escenario', '15:00', '16:00'),
+  general('bus2', 'Retorno en bus', 'fundo', '16:00', '17:00'),
 ]
-
-const FIRST = ['Ana', 'Luis', 'María', 'Carlos', 'Lucía', 'Diego', 'Valeria', 'José', 'Camila', 'Renzo', 'Fiorella', 'Marco', 'Sofía', 'Piero', 'Daniela', 'Jorge']
-const LAST = ['Rojas', 'Castillo', 'Vásquez', 'Mendoza', 'Flores', 'Rodríguez', 'Chávez', 'Paredes', 'Reyes', 'Cruz', 'Sánchez', 'León', 'Díaz', 'Torres', 'Alva', 'Guevara']
-
-function makeParticipants(): Participant[] {
-  const out: Participant[] = []
-  let k = 0
-  GROUPS.forEach((grp, gi) => {
-    DISCIPLINES.forEach((d, di) => {
-      const count = d.id === 'futbol' ? 7 : d.id === 'ajedrez' ? 2 : d.id === 'gincana' ? 4 : 6
-      for (let i = 0; i < count; i++) {
-        const s = gi * 7 + di * 3 + i * 5
-        out.push({
-          id: `p${++k}`,
-          groupId: grp.id,
-          disciplineId: d.id,
-          name: `${FIRST[s % FIRST.length]} ${LAST[(s * 3 + gi) % LAST.length]} ${LAST[(s + di + 5) % LAST.length]}`,
-          jersey: d.usesJersey ? i * 3 + 1 + ((gi + di) % 3) : undefined,
-          status: i === count - 1 && gi % 2 === 1 ? 'pendiente' : 'confirmado',
-        })
-      }
-    })
-  })
-  return out
-}
 
 export const seed = (): EventData => ({
   activities: ACTIVITIES.map((a) => ({ ...a })),
-  participants: makeParticipants(),
+  participants: [],
   announcements: [
-    { id: 'n1', title: 'Cambio de horario en vóley', body: 'El partido III vs VII se reprograma para las 11:30 a. m. en la cancha de vóley.', time: '09:50', groupIds: ['c3', 'c7'], kind: 'cambio' },
-    { id: 'n2', title: 'Gincana a las 11:00', body: 'Cada ciclo debe presentar a sus 4 representantes en el local de actividades 10 minutos antes.', time: '09:30', groupIds: [], kind: 'info' },
-    { id: 'n3', title: 'Delegados: revisen sus listas', body: 'Verifiquen nombres y dorsales de sus equipos antes de cada partido.', time: '08:45', groupIds: [], kind: 'info' },
+    {
+      id: 'n1',
+      title: 'Inscripciones hasta el domingo 15',
+      body: 'El delegado de cada ciclo inscribe a sus participantes hasta el domingo 15 de noviembre a las 10:00 p. m. No se aceptan inscripciones ni cambios fuera de plazo.',
+      date: '2026-11-13',
+      groupIds: [],
+      kind: 'urgente',
+    },
+    {
+      id: 'n2',
+      title: 'Sin tiempo de tolerancia',
+      body: 'Los equipos deben estar completos en la cancha antes de la hora programada. Quien no esté completo pierde por W.O.',
+      date: '2026-11-13',
+      groupIds: [],
+      kind: 'info',
+    },
+    {
+      id: 'n3',
+      title: 'Lleva tu carnet y tu polo',
+      body: 'Para jugar debes mostrar tu carnet universitario o campus virtual y usar el polo del lenguaje de tu ciclo con tu número.',
+      date: '2026-11-13',
+      groupIds: [],
+      kind: 'info',
+    },
+    {
+      id: 'n4',
+      title: 'Buses al Fundo',
+      body: 'Salida hacia el Fundo entre las 7:00 y las 8:00 a. m. Retorno entre las 4:00 y las 5:00 p. m.',
+      date: '2026-11-13',
+      groupIds: [],
+      kind: 'info',
+    },
   ],
   corrections: [],
+  directOverride: {},
 })

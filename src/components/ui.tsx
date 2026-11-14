@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { actTitle, discipline, fmtTime, group, isDuel, useStore, venue, winnerOf } from '../data/store'
+import { discipline, fmtDate, fmtTime, group, teamGroup, useStore, venue } from '../data/store'
 import type { Activity, Announcement, Group, Status } from '../data/types'
 
 export const STATUS_LABEL: Record<Status, string> = {
@@ -18,39 +18,54 @@ export const StatusBadge = ({ status }: { status: Status }) => (
 )
 
 export function ActivityCard({ a }: { a: Activity }) {
-  const { cicloId } = useStore()
+  const { cicloId, bracket, plays } = useStore()
   const v = venue(a.venueId)
   const d = discipline(a.disciplineId)
-  const win = winnerOf(a)
-  const duel = isDuel(a) && a.groupIds.length === 2
-  const mine = !!cicloId && a.groupIds.includes(cicloId)
+  const sides = bracket.sides[a.id]
+  const win = a.status === 'finalizado' ? bracket.winner[a.id] : null
+  const mine = !!cicloId && plays(a, cicloId)
+  const showScore = a.score && !a.wo && (a.status === 'en_curso' || a.status === 'finalizado')
+  const tied = a.status === 'finalizado' && showScore && a.score![0] === a.score![1]
   return (
     <article className={`act${mine ? ' mine' : ''} st-${a.status}`} style={{ borderLeftColor: v.color }}>
       <div className="act-time">
         <strong>{fmtTime(a.start)}</strong>
-        <span>{fmtTime(a.end)}</span>
+        <span>{a.approx ? 'hora aprox.' : fmtTime(a.end)}</span>
       </div>
       <div className="act-body">
         <div className="act-top">
           <StatusBadge status={a.status} />
-          {a.stage && <span className="muted small">{a.stage}</span>}
+          {(a.stage || a.code) && (
+            <span className="muted small">
+              {a.code && `${a.code} · `}
+              {a.stage}
+            </span>
+          )}
         </div>
-        {duel ? (
+        {sides ? (
           <div className="versus">
-            {a.groupIds.map((gid, i) => (
-              <span key={gid} className={`team${win === gid ? ' win' : ''}`}>
-                <i className="swatch" style={{ background: group(gid)!.color }} />
-                {group(gid)!.name}
-                {a.score && <b>{a.score[i]}</b>}
+            {sides.map((s, i) => (
+              <span key={i} className={`team${win && win === s.team ? ' win' : ''}${s.team ? '' : ' tbd'}`}>
+                <i className="swatch" style={{ background: s.team ? group(teamGroup(s.team))!.color : '#c5ccd8' }} />
+                {s.label}
+                {s.team && <small>{group(teamGroup(s.team))!.theme}</small>}
+                {showScore && <b>{a.score![i]}</b>}
               </span>
             ))}
           </div>
         ) : (
-          <h4>{actTitle(a)}</h4>
+          <h4>{a.title}</h4>
+        )}
+        {a.status === 'finalizado' && a.wo && <p className="small result">{win ? 'Ganó por W.O.' : 'Doble W.O.: ambos eliminados'}</p>}
+        {tied && win && <p className="small result">Definido por penales</p>}
+        {a.status === 'finalizado' && a.places && a.places.some(Boolean) && (
+          <ol className="places">
+            {a.places.map((gid, i) => gid && <li key={i}>{group(gid)!.name}</li>)}
+          </ol>
         )}
         <p className="act-meta">
           {d && (
-            <Link to={`/disciplinas/${d.id}`}>
+            <Link to={`/competencias/${d.id}`}>
               {d.icon} {d.name}
             </Link>
           )}
@@ -65,14 +80,14 @@ export function ActivityCard({ a }: { a: Activity }) {
 
 export function Jersey({ g, size = 150 }: { g: Group; size?: number }) {
   return (
-    <svg viewBox="0 0 120 130" width={size} height={size * 1.08} role="img" aria-label={`Polo de ${g.name}`}>
+    <svg viewBox="0 0 120 130" width={size} height={size * 1.08} role="img" aria-label={`Polo de ${g.name}: ${g.theme}`}>
       <path d="M38 8 12 22 2 50l20 8 4-10v74h68V48l4 10 20-8-10-28L82 8c-4 10-12 14-22 14S42 18 38 8Z" fill={g.color} />
-      <path d="M26 74 94 74V122H26Z" fill="rgba(0,0,0,.18)" />
+      <path d="M26 74 94 74V122H26Z" fill="rgba(0,0,0,.16)" />
       <path d="M38 8c4 10 12 14 22 14s18-4 22-14l-6-2c-3 6-9 9-16 9s-13-3-16-9Z" fill="rgba(255,255,255,.55)" />
-      <text x="60" y="58" textAnchor="middle" fontSize="15" fontWeight="800" fill="#fff">
+      <text x="60" y="58" textAnchor="middle" fontSize={g.theme.length > 8 ? 11 : 14} fontWeight="800" fill={g.ink}>
         {g.theme}
       </text>
-      <text x="60" y="104" textAnchor="middle" fontSize="26" fontWeight="800" fill="rgba(255,255,255,.9)">
+      <text x="60" y="106" textAnchor="middle" fontSize="28" fontWeight="800" fill={g.ink}>
         {g.short}
       </text>
     </svg>
@@ -84,12 +99,13 @@ export function AnnouncementCard({ n }: { n: Announcement }) {
     <article className={`ann k-${n.kind}`}>
       <div className="ann-head">
         <strong>{n.title}</strong>
-        <span className="small muted">{fmtTime(n.time)}</span>
+        <span className="small muted">
+          {fmtDate(n.date)}
+          {n.date.length > 10 && ` · ${new Date(n.date).toLocaleTimeString('es-PE', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Lima' })}`}
+        </span>
       </div>
       <p>{n.body}</p>
-      <span className="small muted">
-        Para: {n.groupIds.length ? n.groupIds.map((x) => group(x)?.name).join(', ') : 'todos los ciclos'}
-      </span>
+      <span className="small muted">Para: {n.groupIds.length ? n.groupIds.map((x) => group(x)?.name).join(', ') : 'todos'}</span>
     </article>
   )
 }
