@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { discipline, fmtDate, fmtTime, group, teamGroup, useStore, venue } from '../data/store'
+import { REMOTE, discipline, fmtDate, fmtTime, group, teamGroup, useStore, venue } from '../data/store'
 import type { Activity, Announcement, Group, Status } from '../data/types'
 
 export const STATUS_LABEL: Record<Status, string> = {
@@ -131,3 +131,11 @@ export const Logo = () => (
     </span>
   </span>
 )
+
+export function OfflineBanner() {
+  const { online, loaded } = useStore()
+  if (!REMOTE) return null
+  if (!loaded) return <p className="banner">Cargando datos actualizados…</p>
+  if (!online) return <p className="banner warn">Sin conexión: se muestran los últimos datos guardados en este celular.</p>
+  return null
+}

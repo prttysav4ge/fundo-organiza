@@ -5,9 +5,23 @@ Primera versión: **Día de Integración ICSI – ISIA 2026** (sábado 21 de nov
 
 Los equipos, el cronograma, los fixtures y las reglas vienen de las bases oficiales del evento.
 
-> **Importante:** los datos se guardan en el navegador de cada dispositivo (`localStorage`).
-> Todavía no hay backend compartido, así que lo que registra un delegado o la comisión no se
-> ve en otros celulares. Tampoco el login es seguro: las cuentas son provisionales.
+Los datos viven en **Supabase** (PostgreSQL): son compartidos, se actualizan en vivo y cada
+celular guarda una copia para mostrarla sin señal. Las reglas de inscripción y los permisos se
+aplican en el servidor (`supabase/schema.sql`).
+
+## Base de datos
+
+1. En Supabase › SQL Editor, ejecuta `supabase/schema.sql` y luego `supabase/seed.sql`.
+2. Crea las cuentas con contraseñas propias (no se guardan en el repositorio):
+
+```sql
+insert into accounts (username, pass_hash, role, group_id) values
+  ('admin', extensions.crypt('CONTRASEÑA', extensions.gen_salt('bf')), 'admin', null),
+  ('delegado10', extensions.crypt('CONTRASEÑA', extensions.gen_salt('bf')), 'delegado', 'c10');
+```
+
+`node scripts/gen-seed.ts` regenera `seed.sql` a partir de `src/data/seed.ts`.
+La conexión está en `src/config.ts` (solo la clave pública *anon*).
 
 ## Qué incluye
 
@@ -25,8 +39,8 @@ Los equipos, el cronograma, los fixtures y las reglas vienen de las bases oficia
 
 El ID UPAO solo lo ven el delegado y la comisión; las listas públicas muestran nombre y número.
 
-Cuentas provisionales: `admin` / `admin2026`; `delegado1`…`delegado10` / `ciclo1`…`ciclo10`;
-`delegadoe` / `egresados`.
+Versión de demostración sin servidor: `VITE_LOCAL=1 npm run build` (cuentas `admin` / `admin2026`,
+`delegado10` / `ciclo10`, etc.).
 
 ## Desarrollo
 

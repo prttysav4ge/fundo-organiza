@@ -221,3 +221,6 @@ legend { font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; }
 @media (min-width: 480px) { .ciclo-grid { grid-template-columns: repeat(4, 1fr); } }
 .hero h1 { text-transform: none; }
 .vote { display: inline-block; text-decoration: none; margin: 8px 0; }
+.banner { background: #e8f0fb; color: var(--blue); border-radius: 10px; padding: 8px 12px; font-size: 0.85rem; font-weight: 600; margin: 0 0 10px; }
+.banner.warn { background: #fff0db; color: #9a4a00; }
+.btn:disabled { opacity: 0.6; cursor: wait; }

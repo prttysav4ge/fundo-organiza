@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, Navigate, Outlet, useNavigate, useParams } from 'react-router-dom'
 import FundoMap from '../components/FundoMap'
-import { ActivityCard, AnnouncementCard, Jersey, Logo, STATUS_LABEL } from '../components/ui'
+import { ActivityCard, AnnouncementCard, Jersey, Logo, OfflineBanner, STATUS_LABEL } from '../components/ui'
 import { GINCANA_POINTS } from '../data/bracket'
 import { DISCIPLINES, EVENT, GROUPS } from '../data/seed'
 import { byStart, daysToEvent, discipline, group, teamGroup, teamName, teamsFor, useStore, venue } from '../data/store'
@@ -82,6 +82,7 @@ export function Layout() {
         </div>
       </header>
       <main>
+        <OfflineBanner />
         <Outlet />
       </main>
       <nav className="bottomnav">

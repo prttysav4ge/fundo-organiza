@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Logo, STATUS_LABEL } from '../components/ui'
+import { Logo, OfflineBanner, STATUS_LABEL } from '../components/ui'
 import { DISCIPLINES, EVENT, GROUPS, VENUES } from '../data/seed'
-import { byStart, discipline, fmtDate, group, inscriptionsOpen, teamName, teamsFor, useStore } from '../data/store'
+import { REMOTE, byStart, discipline, fmtDate, group, teamName, teamsFor, useStore } from '../data/store'
 import type { Activity, Announcement, Correction, Participant, Status } from '../data/types'
 
 const ROSTERED = DISCIPLINES.filter((d) => d.roster)
@@ -28,7 +28,11 @@ export default function Manage() {
         </div>
       </header>
       <main>
-        <div className="page">{!session ? <Login /> : session.role === 'admin' ? <Admin /> : <Delegate groupId={session.groupId!} />}</div>
+        <div className="page">
+          <OfflineBanner />
+          {!session ? <Login /> : session.role === 'admin' ? <Admin /> : <Delegate groupId={session.groupId!} />}
+          {session && REMOTE && <ChangePassword />}
+        </div>
       </main>
     </div>
   )
@@ -39,9 +43,16 @@ function Login() {
   const [u, setU] = useState('')
   const [p, setP] = useState('')
   const [err, setErr] = useState('')
-  const submit = (e: FormEvent) => {
+  const [busy, setBusy] = useState(false)
+  const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!login(u, p)) setErr('Usuario o contraseña incorrectos.')
+    setBusy(true)
+    try {
+      if (!(await login(u, p))) setErr('Usuario o contraseña incorrectos.')
+    } catch (x) {
+      setErr((x as Error).message)
+    }
+    setBusy(false)
   }
   return (
     <form className="card form narrow" onSubmit={submit}>
@@ -56,11 +67,15 @@ function Login() {
         <input type="password" value={p} onChange={(e) => setP(e.target.value)} autoComplete="current-password" required />
       </label>
       {err && <p className="error">{err}</p>}
-      <button className="btn primary">Ingresar</button>
+      <button className="btn primary" disabled={busy}>
+        {busy ? 'Ingresando…' : 'Ingresar'}
+      </button>
+      {!REMOTE && (
       <p className="small muted demo">
         <b>Cuentas provisionales:</b> <code>admin</code> / <code>admin2026</code> · delegados <code>delegado1</code>…<code>delegado10</code> con{' '}
         <code>ciclo1</code>…<code>ciclo10</code> · egresados <code>delegadoe</code> / <code>egresados</code>.
       </p>
+      )}
     </form>
   )
 }
@@ -78,7 +93,7 @@ const PBadge = ({ p }: { p: Participant }) => (
 )
 
 function Delegate({ groupId }: { groupId: string }) {
-  const { participants, corrections, addParticipant, requestCorrection } = useStore()
+  const { participants, corrections, addParticipant, requestCorrection, inscriptionsOpen: open } = useStore()
   const g = group(groupId)!
   const [did, setDid] = useState(ROSTERED[0].id)
   const d = discipline(did)!
@@ -88,7 +103,6 @@ function Delegate({ groupId }: { groupId: string }) {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [asking, setAsking] = useState<string | null>(null)
   const [reason, setReason] = useState('')
-  const open = inscriptionsOpen()
   const mine = participants.filter((p) => p.groupId === groupId)
   const list = mine.filter((p) => p.disciplineId === did)
   const teamId = teams.includes(f.team) ? f.team : teams[0]
@@ -103,9 +117,11 @@ function Delegate({ groupId }: { groupId: string }) {
     if (did === 'gincana' && n.length !== 10) hints.push(`La gincana requiere exactamente 10 personas: llevas ${n.length}.`)
   })
 
-  const submit = (e: FormEvent) => {
+  const [busy, setBusy] = useState(false)
+  const submit = async (e: FormEvent) => {
     e.preventDefault()
-    const err = addParticipant({
+    setBusy(true)
+    const err = await addParticipant({
       groupId,
       teamId,
       disciplineId: did,
@@ -114,6 +130,7 @@ function Delegate({ groupId }: { groupId: string }) {
       jersey: rule.jersey ? +f.jersey : undefined,
       gender: rule.gender ? (f.gender as 'F' | 'M') || undefined : undefined,
     })
+    setBusy(false)
     setMsg(err ? { ok: false, text: err } : { ok: true, text: 'Participante registrado. Queda pendiente de confirmación.' })
     if (!err) setF({ ...f, name: '', upaoId: '', jersey: '', gender: '' })
   }
@@ -131,7 +148,7 @@ function Delegate({ groupId }: { groupId: string }) {
           </>
         ) : (
           <>
-            🔒 El plazo de inscripción venció el <b>{EVENT.deadlineLabel}</b> Ya no se aceptan inscripciones ni cambios.
+            🔒 El plazo de inscripción venció (<b>{EVENT.deadlineLabel}</b>). Ya no se aceptan inscripciones ni cambios.
           </>
         )}
       </p>
@@ -156,7 +173,7 @@ function Delegate({ groupId }: { groupId: string }) {
             </label>
             <label>
               ID UPAO
-              <input inputMode="numeric" value={f.upaoId} onChange={(e) => setF({ ...f, upaoId: e.target.value })} required style={{ width: 140 }} />
+              <input inputMode="numeric" maxLength={9} placeholder="6 o 9 dígitos" value={f.upaoId} onChange={(e) => setF({ ...f, upaoId: e.target.value })} required style={{ width: 140 }} />
             </label>
             {rule.jersey && (
               <label>
@@ -188,7 +205,9 @@ function Delegate({ groupId }: { groupId: string }) {
             )}
           </div>
           {msg && <p className={msg.ok ? 'success' : 'error'}>{msg.text}</p>}
-          <button className="btn primary">Enviar inscripción</button>
+          <button className="btn primary" disabled={busy}>
+            {busy ? 'Enviando…' : 'Enviar inscripción'}
+          </button>
         </form>
       )}
 
@@ -265,11 +284,13 @@ function Admin() {
       {tab === 'Inscripciones' && <AdminParticipants />}
       {tab === 'Correcciones' && <AdminCorrections />}
       {tab === 'Anuncios' && <AdminAnnouncements />}
+      {!REMOTE && (
       <p className="small muted" style={{ marginTop: 32 }}>
         <button className="btn ghost danger" onClick={() => confirm('Se borrarán inscripciones, resultados y anuncios de este navegador. ¿Continuar?') && reset()}>
           Restablecer todo al estado inicial
         </button>
       </p>
+      )}
     </>
   )
 }
@@ -323,9 +344,10 @@ function AdminActivities() {
         className="card form"
         onSubmit={(e) => {
           e.preventDefault()
-          const res = addActivity(nf)
-          setErr(res ?? '')
-          if (!res) setNf({ ...nf, title: '', start: '', end: '' })
+          addActivity(nf).then((res) => {
+            setErr(res ?? '')
+            if (!res) setNf({ ...nf, title: '', start: '', end: '' })
+          })
         }}
       >
         <h2>Agregar actividad general</h2>
@@ -387,7 +409,7 @@ function ActivityEditor({ a, onDone }: { a: Activity; onDone: () => void }) {
   const done = f.status === 'finalizado'
   const tie = f.s0 === f.s1
 
-  const save = (e: FormEvent) => {
+  const save = async (e: FormEvent) => {
     e.preventDefault()
     const patch: Partial<Activity> = { start: f.start, end: f.end, venueId: f.venueId, status: f.status }
     if (sides && playing) {
@@ -413,7 +435,7 @@ function ActivityEditor({ a, onDone }: { a: Activity; onDone: () => void }) {
       if (new Set(chosen).size !== chosen.length) return setErr('Un ciclo no puede ocupar dos puestos en el mismo juego.')
       patch.places = f.places
     }
-    const res = updateActivity(a.id, patch)
+    const res = await updateActivity(a.id, patch)
     if (res) setErr(res)
     else onDone()
   }
@@ -546,7 +568,7 @@ function ActivityEditor({ a, onDone }: { a: Activity; onDone: () => void }) {
 }
 
 function AdminParticipants() {
-  const { participants, confirmParticipant, confirmAll, removeParticipant } = useStore()
+  const { participants, confirmParticipants, removeParticipant } = useStore()
   const [gid, setGid] = useState('todos')
   const [did, setDid] = useState('todas')
   const [onlyPending, setOnlyPending] = useState(false)
@@ -581,7 +603,7 @@ function AdminParticipants() {
           <input type="checkbox" checked={onlyPending} onChange={(e) => setOnlyPending(e.target.checked)} /> Solo por confirmar
         </label>
         {pending > 0 && did === 'todas' && (
-          <button className="btn ghost" onClick={() => confirm(`¿Confirmar las inscripciones pendientes de ${gid === 'todos' ? 'todos los ciclos' : group(gid)!.name}?`) && confirmAll(gid)}>
+          <button className="btn ghost" onClick={() => confirm(`¿Confirmar las inscripciones pendientes de ${gid === 'todos' ? 'todos los ciclos' : group(gid)!.name}?`) && confirmParticipants(list.filter((p) => p.status === 'pendiente').map((p) => p.id))}>
             Confirmar todas
           </button>
         )}
@@ -597,7 +619,7 @@ function AdminParticipants() {
             </div>
             <div className="row">
               {p.status === 'pendiente' ? (
-                <button className="btn primary" onClick={() => confirmParticipant(p.id)}>
+                <button className="btn primary" onClick={() => confirmParticipants([p.id])}>
                   Confirmar
                 </button>
               ) : (
@@ -642,7 +664,7 @@ function CorrectionItem({ c }: { c: Correction }) {
       className="card item form"
       onSubmit={(e) => {
         e.preventDefault()
-        setErr(resolveCorrection(c.id, { name, upaoId: upaoId.trim(), jersey: d.roster!.jersey ? +jersey : undefined }) ?? '')
+        resolveCorrection(c.id, { name, upaoId: upaoId.trim(), jersey: d.roster!.jersey ? +jersey : undefined }).then((r) => setErr(r ?? ''))
       }}
     >
       <span className="small muted">
@@ -658,7 +680,7 @@ function CorrectionItem({ c }: { c: Correction }) {
         </label>
         <label>
           ID UPAO
-          <input inputMode="numeric" value={upaoId} onChange={(e) => setUpaoId(e.target.value)} required style={{ width: 140 }} />
+          <input inputMode="numeric" maxLength={9} value={upaoId} onChange={(e) => setUpaoId(e.target.value)} required style={{ width: 140 }} />
         </label>
         {d.roster!.jersey && (
           <label>
@@ -748,5 +770,39 @@ function AdminAnnouncements() {
         ))}
       </div>
     </>
+  )
+}
+
+function ChangePassword() {
+  const { changePassword } = useStore()
+  const [o, setO] = useState('')
+  const [n, setN] = useState('')
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  return (
+    <details className="card rules" style={{ marginTop: 32 }}>
+      <summary>Cambiar mi contraseña</summary>
+      <form
+        className="form"
+        onSubmit={async (e) => {
+          e.preventDefault()
+          const err = await changePassword(o, n)
+          setMsg(err ? { ok: false, text: err } : { ok: true, text: 'Contraseña actualizada.' })
+          if (!err) (setO(''), setN(''))
+        }}
+      >
+        <div className="row">
+          <label className="grow">
+            Contraseña actual
+            <input type="password" value={o} onChange={(e) => setO(e.target.value)} autoComplete="current-password" required />
+          </label>
+          <label className="grow">
+            Nueva contraseña (mínimo 8 caracteres)
+            <input type="password" value={n} onChange={(e) => setN(e.target.value)} autoComplete="new-password" minLength={8} required />
+          </label>
+        </div>
+        {msg && <p className={msg.ok ? 'success' : 'error'}>{msg.text}</p>}
+        <button className="btn primary">Guardar contraseña</button>
+      </form>
+    </details>
   )
 }
