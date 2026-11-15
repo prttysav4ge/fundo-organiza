@@ -251,3 +251,5 @@ legend { font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; }
   .flive { box-shadow: 0 0 0 1.5px #fff; }
 }
 .fmap-bg { user-select: none; -webkit-user-drag: none; pointer-events: none; }
+.polo { width: auto; max-width: 100%; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.18)); }
+@media (min-width: 900px) { .hero .polo { height: 220px !important; } }

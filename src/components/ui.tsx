@@ -1,3 +1,5 @@
+import poloC10 from '../assets/polo-c10.webp'
+import poloC6 from '../assets/polo-c6.webp'
 import { Link } from 'react-router-dom'
 import { REMOTE, discipline, fmtDate, fmtTime, group, teamGroup, useStore, venue } from '../data/store'
 import type { Activity, Announcement, Group, Status } from '../data/types'
@@ -83,7 +85,12 @@ export function ActivityCard({ a }: { a: Activity }) {
   )
 }
 
+/** Fotos de los polos que ya existen. Para agregar otro: src/assets/polo-<id>.webp y añadirlo aquí. */
+const POLO_PHOTOS: Record<string, string> = { c6: poloC6, c10: poloC10 }
+
 export function Jersey({ g, size = 150 }: { g: Group; size?: number }) {
+  const photo = POLO_PHOTOS[g.id]
+  if (photo) return <img className="polo" src={photo} alt={`Polo de ${g.name}: ${g.theme}`} style={{ height: size * 1.3 }} />
   return (
     <svg viewBox="0 0 120 130" width={size} height={size * 1.08} role="img" aria-label={`Polo de ${g.name}: ${g.theme}`}>
       <path d="M38 8 12 22 2 50l20 8 4-10v74h68V48l4 10 20-8-10-28L82 8c-4 10-12 14-22 14S42 18 38 8Z" fill={g.color} />
