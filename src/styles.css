@@ -289,3 +289,5 @@ a.act-panel:focus-visible { outline-offset: -3px; }
   .team { font-size: 0.95rem; }
   .act-top .muted { flex-basis: 100%; }
 }
+.act-sport { font-weight: 600; font-size: 0.92rem; text-decoration: none; }
+@media (max-width: 400px) { .act-sport { font-size: 0.8rem; } }
