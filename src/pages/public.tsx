@@ -268,7 +268,7 @@ export function Disciplines() {
     <div className="page">
       <h1>Competencias</h1>
       <div className="disc-grid">
-        {DISCIPLINES.map((d) => {
+        {[...DISCIPLINES].sort((x, y) => +(y.id === 'concurso') - +(x.id === 'concurso')).map((d) => {
           const live = activities.filter((a) => a.disciplineId === d.id && a.status === 'en_curso').length
           return (
             <Link key={d.id} to={d.id} className="card disc">

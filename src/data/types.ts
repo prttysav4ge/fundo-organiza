@@ -35,6 +35,8 @@ export interface Discipline {
 export interface Venue {
   id: string
   name: string
+  /** Nombre completo para las tarjetas («Cancha 2 de fútbol»). */
+  place: string
   color: string
   text: string
 }

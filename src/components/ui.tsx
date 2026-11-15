@@ -33,11 +33,15 @@ export function ActivityCard({ a }: { a: Activity }) {
     .filter((x) => x?.dispute && x.status !== 'finalizado')
     .map((x) => `${discipline(x!.disciplineId)?.name} ${x!.code}`)
   const tied = a.status === 'finalizado' && showScore && a.score![0] === a.score![1]
+  const panelIcon = d?.icon ?? GENERAL_ICON[a.id] ?? '📌'
   return (
     <article className={`act${mine ? ' mine' : ''} st-${a.status}`} style={{ borderLeftColor: v.color }}>
       <div className="act-time">
         <strong>{fmtTime(a.start)}</strong>
         <span>{a.approx ? 'hora aprox.' : fmtTime(a.end)}</span>
+        <span className="act-place">
+          <span aria-hidden="true">📍</span> {v.place}
+        </span>
       </div>
       <div className="act-body">
         <div className="act-top">
@@ -75,21 +79,28 @@ export function ActivityCard({ a }: { a: Activity }) {
             🏆 Campeón: {a.champion.name} ({group(a.champion.groupId)?.name})
           </p>
         )}
-        <p className="act-meta">
-          {d && (
-            <Link to={`/competencias/${d.id}`}>
-              {d.icon} {d.name}
-            </Link>
-          )}
-          <span>📍 {v.name}</span>
-          {mine && <span className="tag-mine">Tu ciclo</span>}
-        </p>
+        {mine && <p className="tag-mine">Tu ciclo</p>}
         {a.note && <p className="small muted">{a.note}</p>}
         {waitingFor.length > 0 && <p className="small hint">⏸️ En espera: el resultado de {waitingFor.join(', ')} está en disputa.</p>}
       </div>
+      {d ? (
+        <Link to={`/competencias/${d.id}`} className="act-panel" style={{ background: v.color, color: v.text }}>
+          <span className="act-icon" aria-hidden="true">
+            {panelIcon}
+          </span>
+          <span className="act-sport">{d.name}</span>
+        </Link>
+      ) : (
+        <div className="act-panel" style={{ background: v.color, color: v.text }} aria-hidden="true">
+          <span className="act-icon">{panelIcon}</span>
+        </div>
+      )}
     </article>
   )
 }
+
+/** Íconos de las actividades generales (sin competencia). */
+const GENERAL_ICON: Record<string, string> = { bus1: '🚌', bus2: '🚌', desfile: '🎉', dj: '🎵', almuerzo: '🍽️', baileton: '💃' }
 
 /** Fotos de los polos que ya existen. Para agregar otro: src/assets/polo-<id>.webp y añadirlo aquí. */
 const POLO_PHOTOS: Record<string, string> = { c6: poloC6, c10: poloC10 }

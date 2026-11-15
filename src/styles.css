@@ -257,3 +257,35 @@ legend { font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; }
 .reports { margin: 4px 0; padding-left: 18px; font-size: 0.9rem; display: grid; gap: 2px; }
 .item.disputed { border-color: #e11d48; background: #fff7f8; }
 .pdata { overflow-wrap: anywhere; }
+
+/* Tarjeta de actividad v2: panel lateral con el deporte en grande */
+.act { padding: 0; gap: 0; overflow: hidden; align-items: stretch; }
+.act-time { padding: 10px 8px 10px 12px; width: 104px; min-width: 0; flex: none; gap: 2px; }
+.act-place { margin-top: auto; padding-top: 8px; color: var(--ink) !important; font-size: 0.78rem !important; line-height: 1.25; }
+.act-body { padding: 10px 8px; }
+.act-panel {
+  flex: none; width: 112px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 10px 6px; text-align: center; text-decoration: none;
+}
+.act-icon { font-size: 2.6rem; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25)); }
+.act-sport { font-weight: 800; font-size: 1.05rem; line-height: 1.1; text-decoration: underline; text-underline-offset: 3px; }
+a.act-panel:hover .act-icon { transform: scale(1.08); }
+a.act-panel:focus-visible { outline-offset: -3px; }
+.act .tag-mine { font-size: 0.82rem; margin: 4px 0 0; }
+.act.st-finalizado .act-panel, .act.st-cancelado .act-panel { opacity: 0.75; }
+@media (max-width: 400px) {
+  .act-time { width: 88px; padding-left: 10px; }
+  .act-panel { width: 84px; }
+  .act-icon { font-size: 2rem; }
+  .act-sport { font-size: 0.85rem; }
+}
+.team { white-space: nowrap; min-width: 0; }
+.team small { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+.team b { padding-left: 6px; }
+@media (max-width: 400px) {
+  .act-body { padding: 10px 6px; }
+  .act-time { width: 82px; padding-right: 4px; }
+  .act-panel { width: 78px; }
+  .team { font-size: 0.95rem; }
+  .act-top .muted { flex-basis: 100%; }
+}

@@ -177,15 +177,15 @@ export const DISCIPLINES: Discipline[] = [
 ]
 
 export const VENUES: Venue[] = [
-  { id: 'cancha1', name: 'Cancha 1', color: '#f25c5c', text: '#3b0d0d' },
-  { id: 'cancha2', name: 'Cancha 2', color: '#19b5d8', text: '#06303a' },
-  { id: 'cancha3', name: 'Cancha 3', color: '#7ed957', text: '#173a08' },
-  { id: 'cancha4', name: 'Cancha 4', color: '#f7d54a', text: '#3f3300' },
-  { id: 'voley', name: 'Vóley', color: '#7c4ddb', text: '#ffffff' },
-  { id: 'basquet', name: 'Básquet', color: '#14308f', text: '#ffffff' },
-  { id: 'escenario', name: 'Escenario', color: '#f9914a', text: '#3d1c00' },
-  { id: 'piscina', name: 'Piscina', color: '#2a8fd6', text: '#ffffff' },
-  { id: 'fundo', name: 'Fundo UPAO', color: '#8792a6', text: '#ffffff' },
+  { id: 'cancha1', name: 'Cancha 1', place: 'Cancha 1 de fútbol', color: '#f25c5c', text: '#3b0d0d' },
+  { id: 'cancha2', name: 'Cancha 2', place: 'Cancha 2 de fútbol', color: '#19b5d8', text: '#06303a' },
+  { id: 'cancha3', name: 'Cancha 3', place: 'Cancha 3 de fútbol', color: '#7ed957', text: '#173a08' },
+  { id: 'cancha4', name: 'Cancha 4', place: 'Cancha 4', color: '#f7d54a', text: '#3f3300' },
+  { id: 'voley', name: 'Vóley', place: 'Cancha de vóley', color: '#7c4ddb', text: '#ffffff' },
+  { id: 'basquet', name: 'Básquet', place: 'Cancha de básquet', color: '#14308f', text: '#ffffff' },
+  { id: 'escenario', name: 'Escenario', place: 'Escenario', color: '#f9914a', text: '#3d1c00' },
+  { id: 'piscina', name: 'Piscina', place: 'Piscina', color: '#2a8fd6', text: '#ffffff' },
+  { id: 'fundo', name: 'Fundo UPAO', place: 'Fundo UPAO', color: '#8792a6', text: '#ffffff' },
 ]
 
 export const R1 = '1.ª ronda'
