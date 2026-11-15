@@ -270,8 +270,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const conflict = (next: Activity): string | null => {
     if (toMin(next.end) <= toMin(next.start)) return 'La hora de fin debe ser posterior a la de inicio.'
     if (next.status === 'cancelado' || next.status === 'finalizado' || next.venueId === 'fundo') return null
+    // Solo se cruzan dos competencias en el mismo lugar; las actividades generales
+    // (almuerzo, música, bailetón…) pueden compartir espacio y horario.
+    if (!next.disciplineId) return null
     for (const o of data.activities) {
-      if (o.id === next.id || o.status === 'cancelado' || o.status === 'finalizado') continue
+      if (o.id === next.id || !o.disciplineId || o.status === 'cancelado' || o.status === 'finalizado') continue
       if (o.venueId === next.venueId && toMin(next.start) < toMin(o.end) && toMin(o.start) < toMin(next.end))
         return `Cruce de lugar: ${venue(o.venueId).name} ya tiene «${title(o)}» (${fmtTime(o.start)} – ${fmtTime(o.end)}).`
     }

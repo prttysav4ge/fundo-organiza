@@ -66,6 +66,7 @@ drop policy if exists "lectura publica" on announcements;
 create policy "lectura publica" on settings for select to anon, authenticated using (true);
 create policy "lectura publica" on activities for select to anon, authenticated using (true);
 create policy "lectura publica" on announcements for select to anon, authenticated using (true);
+grant select on settings, activities, announcements to anon, authenticated;
 -- participants, corrections, accounts y sessions no tienen políticas: nadie las lee directamente.
 
 -- Lista pública de inscritos: sin ID UPAO.

@@ -280,9 +280,9 @@ const ACTIVITIES: Activity[] = [
   general('fd', 'Fútbol damas', 'cancha2', '11:20', '11:45', { disciplineId: 'futbol_damas', sides: [{ label: 'Equipo A' }, { label: 'Equipo B' }] }),
   general('bd', 'Básquet damas', 'voley', '12:55', '13:20', { disciplineId: 'basquet_damas', sides: [{ label: 'Equipo A' }, { label: 'Equipo B' }] }),
   general('ajedrez', 'Torneo de ajedrez blitz', 'escenario', '11:30', '12:30', { disciplineId: 'ajedrez', note: 'Abierto a todos. Da tu nombre y ciclo en el escenario antes de las 11:30 a. m.' }),
-  general('dj', 'Inicio de la música con DJ Angel', 'escenario', '13:00', '13:45'),
+  general('dj', 'Inicio de la música con DJ Angel', 'escenario', '13:00', '17:00', { note: 'La música sigue hasta el cierre del evento.' }),
   general('concurso', 'Anuncio del ganador del concurso', 'escenario', '13:45', '14:00', { disciplineId: 'concurso' }),
-  general('almuerzo', 'Almuerzo y premiación', 'escenario', '14:00', '14:30', { note: 'Almuerzo exclusivo para inscritos. Se entregan los trofeos de fútbol, vóley, básquet y gincana y se anuncia al campeón de ajedrez.' }),
+  general('almuerzo', 'Almuerzo y premiación', 'escenario', '14:00', '15:00', { note: 'Almuerzo exclusivo para inscritos. Se entregan los trofeos de fútbol, vóley, básquet y gincana y se anuncia al campeón de ajedrez.' }),
   general('baileton', 'Bailetón', 'escenario', '14:30', '17:00'),
   general('bus2', 'Retorno en bus', 'fundo', '17:00', '17:30'),
 ]

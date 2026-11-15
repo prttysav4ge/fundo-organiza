@@ -224,3 +224,29 @@ legend { font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; }
 .banner { background: #e8f0fb; color: var(--blue); border-radius: 10px; padding: 8px 12px; font-size: 0.85rem; font-weight: 600; margin: 0 0 10px; }
 .banner.warn { background: #fff0db; color: #9a4a00; }
 .btn:disabled { opacity: 0.6; cursor: wait; }
+
+/* Mapa v2: etiquetas en HTML sobre el fondo, tamaño proporcional al mapa */
+.fmap { position: relative; width: 100%; aspect-ratio: 1273 / 1003; border-radius: var(--radius); overflow: hidden; container-type: inline-size; background: #555; }
+.fmap-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.farea { position: absolute; background: transparent; border: 0; padding: 0; cursor: pointer; border-radius: 6px; transition: box-shadow 0.15s; }
+.fzone:hover .farea, .fzone.sel .farea { box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.08); }
+.fpill {
+  position: absolute; transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; gap: 0.35em; white-space: nowrap;
+  font: 600 clamp(10px, 2.3cqw, 22px) / 1 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  padding: 0.6em 1.15em; border-radius: 999px; border: 0; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); transition: transform 0.15s;
+}
+.fpill:hover, .fzone.sel .fpill { transform: translate(-50%, -50%) scale(1.07); }
+.fzone.sel .fpill { box-shadow: 0 0 0 3px #fff, 0 3px 10px rgba(0, 0, 0, 0.35); }
+.fpill.mine { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--orange), 0 3px 10px rgba(0, 0, 0, 0.35); }
+.fstar { color: #ffd23f; text-shadow: 0 0 2px rgba(0, 0, 0, 0.5); }
+.flive { width: 0.6em; height: 0.6em; border-radius: 50%; background: #e11d48; box-shadow: 0 0 0 2px #fff; animation: blink 1.2s infinite; }
+@media (prefers-reduced-motion: reduce) { .flive { animation: none; } .fpill { transition: none; } }
+.legend-mine { color: var(--orange); }
+@container (max-width: 560px) {
+  .fpill { font-size: 9px; padding: 0.55em 0.75em; gap: 0.25em; }
+  .fpill.mine { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--orange); }
+  .fzone.sel .fpill { box-shadow: 0 0 0 2px #fff; }
+  .flive { box-shadow: 0 0 0 1.5px #fff; }
+}

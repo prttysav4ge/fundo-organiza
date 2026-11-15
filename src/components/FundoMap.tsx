@@ -1,19 +1,32 @@
-import type { ReactElement } from 'react'
 import { VENUES } from '../data/seed'
 import { useStore } from '../data/store'
 
-// Croquis interactivo del Fundo. Cada zona es un botón; las posiciones de las
-// etiquetas se definen aquí para poder cambiar de mapa en otros eventos.
-const LABEL: Record<string, [number, number]> = {
-  escenario: [262, 122],
-  voley: [486, 143],
-  basquet: [616, 143],
-  cancha1: [383, 328],
-  cancha4: [557, 328],
-  cancha2: [383, 455],
-  cancha3: [557, 455],
-  piscina: [150, 440],
+// Croquis interactivo del Fundo. Sigue la composición del diseño original: cada
+// zona tiene un área tocable y una etiqueta centrada. Posiciones en % del mapa
+// (proporción 1273 × 1003) para que la misma plantilla sirva con una foto aérea
+// de fondo (MAP_IMAGE) o con el dibujo vectorial de respaldo.
+
+/** Imagen de fondo opcional (ruta en /public). Vacío = dibujo vectorial. */
+export const MAP_IMAGE = ''
+
+interface Zone {
+  id: string
+  /** Centro de la etiqueta, en %. */
+  label: [number, number]
+  /** Área tocable: x, y, ancho, alto en %. */
+  area: [number, number, number, number]
 }
+
+const ZONES: Zone[] = [
+  { id: 'escenario', label: [24, 30], area: [10, 10, 29, 41] },
+  { id: 'voley', label: [71.5, 19], area: [63, 0, 17, 38] },
+  { id: 'basquet', label: [90.5, 19], area: [82, 0, 17, 38] },
+  { id: 'cancha1', label: [56.2, 55], area: [39, 39, 30.5, 30.5] },
+  { id: 'cancha4', label: [82, 55], area: [69.5, 39, 30.5, 30.5] },
+  { id: 'cancha2', label: [56.2, 80], area: [39, 69.5, 30.5, 30.5] },
+  { id: 'cancha3', label: [82, 80], area: [69.5, 69.5, 30.5, 30.5] },
+  { id: 'piscina', label: [23.5, 68], area: [10, 48, 28, 41] },
+]
 
 interface Props {
   selected: string | null
@@ -26,112 +39,125 @@ export default function FundoMap({ selected, onSelect }: Props) {
   const mine = (v: string) =>
     !!cicloId && activities.some((a) => a.venueId === v && plays(a, cicloId) && a.status !== 'finalizado' && a.status !== 'cancelado')
 
-  const zone = (id: string, shape: ReactElement) => {
-    const v = VENUES.find((x) => x.id === id)!
-    const [x, y] = LABEL[id]
-    const w = v.name.length * 10 + 30
-    const isLive = live(id)
-    const isMine = mine(id)
-    return (
-      <g
-        key={id}
-        className={`zone${selected === id ? ' sel' : ''}`}
-        role="button"
-        tabIndex={0}
-        aria-label={`${v.name}${isLive ? ', actividad en curso' : ''}${isMine ? ', tu ciclo tiene actividad aquí' : ''}`}
-        onClick={() => onSelect(id)}
-        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onSelect(id))}
-      >
-        {shape}
-        <g className="pill">
-          <rect x={x - w / 2} y={y - 19} width={w} height={38} rx={19} fill={v.color} stroke={isMine ? '#fff' : 'none'} strokeWidth={3} />
-          <text x={x} y={y + 7} textAnchor="middle" fill={v.text}>
-            {v.name}
-          </text>
-          {isLive && (
-            <g>
-              <circle className="pulse" cx={x + w / 2 - 4} cy={y - 16} r={7} fill="#e11d48" />
-              <circle cx={x + w / 2 - 4} cy={y - 16} r={5} fill="#e11d48" stroke="#fff" strokeWidth={1.5} />
-            </g>
-          )}
-          {isMine && (
-            <text x={x - w / 2 + 2} y={y - 10} fontSize={15} textAnchor="middle">
-              ⭐
-            </text>
-          )}
-        </g>
-      </g>
-    )
-  }
-
-  const court = (x: number, outer: string, inner: string, line: string, key: string) => (
-    <g>
-      <rect className="hit" x={x} y={0} width={116} height={292} fill={outer} />
-      <rect x={x + 10} y={10} width={96} height={272} fill={inner} stroke="#fff" strokeWidth={1.5} />
-      <line x1={x + 10} y1={146} x2={x + 106} y2={146} stroke="#fff" strokeWidth={1.5} />
-      <rect x={x + 46} y={10} width={24} height={40} fill={line} />
-      <rect x={x + 46} y={242} width={24} height={40} fill={line} />
-      <path d={`M${x + 28} 10a30 34 0 0 0 60 0M${x + 28} 282a30 34 0 0 1 60 0`} fill="none" stroke="#fff" strokeWidth={1.5} />
-      <title>{key}</title>
-    </g>
-  )
-
-  const pitch = (x: number, y: number) => (
-    <g>
-      <rect className="hit" x={x} y={y} width={166} height={118} rx={6} fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.75)" strokeWidth={2} />
-      <line x1={x + 83} y1={y} x2={x + 83} y2={y + 118} stroke="rgba(255,255,255,.6)" strokeWidth={1.5} />
-      <circle cx={x + 83} cy={y + 59} r={16} fill="none" stroke="rgba(255,255,255,.6)" strokeWidth={1.5} />
-    </g>
-  )
-
   return (
-    <svg className="fundo-map" viewBox="0 0 680 540" role="group" aria-label="Mapa interactivo del Fundo UPAO">
+    <div className="fmap" role="group" aria-label="Mapa interactivo del Fundo UPAO">
+      {MAP_IMAGE ? <img className="fmap-bg" src={MAP_IMAGE} alt="" /> : <MapDrawing />}
+      {ZONES.map((z) => {
+        const v = VENUES.find((x) => x.id === z.id)!
+        const isLive = live(z.id)
+        const isMine = mine(z.id)
+        const [x, y, w, h] = z.area
+        const label = `${v.name}${isLive ? ', actividad en curso' : ''}${isMine ? ', tu ciclo juega aquí' : ''}`
+        return (
+          <div key={z.id} className={`fzone${selected === z.id ? ' sel' : ''}`}>
+            <button
+              className="farea"
+              style={{ left: `${x}%`, top: `${y}%`, width: `${w}%`, height: `${h}%` }}
+              onClick={() => onSelect(z.id)}
+              aria-hidden="true"
+              tabIndex={-1}
+            />
+            <button
+              className={`fpill${isMine ? ' mine' : ''}`}
+              style={{ left: `${z.label[0]}%`, top: `${z.label[1]}%`, background: v.color, color: v.text }}
+              onClick={() => onSelect(z.id)}
+              aria-label={label}
+              aria-pressed={selected === z.id}
+            >
+              {isMine && <span className="fstar" aria-hidden="true">★</span>}
+              {v.name}
+              {isLive && <span className="flive" aria-hidden="true" />}
+            </button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Dibujo de respaldo con la misma distribución que el diseño original. */
+function MapDrawing() {
+  const bleachers = (x: number, y: number, n: number) => (
+    <g>
+      {Array.from({ length: n }, (_, i) => (
+        <g key={i} transform={`translate(${x + i * 92} ${y})`}>
+          <rect width="86" height="58" rx="4" fill="#1c2a44" />
+          {[8, 24, 40].map((r) => (
+            <rect key={r} x="6" y={r} width="74" height="10" rx="2" fill="#e9eef6" opacity="0.9" />
+          ))}
+        </g>
+      ))}
+    </g>
+  )
+  const court = (x: number, outer: string, inner: string, paint: string) => (
+    <g>
+      <rect x={x} y="0" width="216" height="378" fill={outer} />
+      <rect x={x + 16} y="18" width="184" height="346" fill={inner} stroke="#fff" strokeWidth="3" />
+      <line x1={x + 16} y1="191" x2={x + 200} y2="191" stroke="#fff" strokeWidth="3" />
+      <circle cx={x + 108} cy="191" r="26" fill="none" stroke="#fff" strokeWidth="3" />
+      <rect x={x + 86} y="18" width="44" height="76" fill={paint} stroke="#fff" strokeWidth="3" />
+      <rect x={x + 86} y="288" width="44" height="76" fill={paint} stroke="#fff" strokeWidth="3" />
+      <path d={`M${x + 50} 18 a58 72 0 0 0 116 0 M${x + 50} 364 a58 72 0 0 1 116 0`} fill="none" stroke="#fff" strokeWidth="3" />
+    </g>
+  )
+  return (
+    <svg className="fmap-bg" viewBox="0 0 1273 1003" preserveAspectRatio="none" aria-hidden="true">
       <defs>
-        <pattern id="grass" width="40" height="40" patternUnits="userSpaceOnUse">
-          <rect width="40" height="40" fill="#3f9a2d" />
-          <rect width="20" height="40" fill="#4bab35" />
+        <pattern id="fm-grass" width="78" height="78" patternUnits="userSpaceOnUse">
+          <rect width="78" height="78" fill="#3f9a2d" />
+          <rect width="39" height="78" fill="#4aa936" />
         </pattern>
-        <pattern id="water" width="16" height="16" patternUnits="userSpaceOnUse">
-          <rect width="16" height="16" fill="#2a9fe0" />
-          <line x1="0" y1="0" x2="0" y2="16" stroke="#1565a8" strokeWidth="2" />
+        <pattern id="fm-lawn" width="12" height="12" patternUnits="userSpaceOnUse">
+          <rect width="12" height="12" fill="#2f4a2c" />
+          <circle cx="3" cy="4" r="1.4" fill="#3b5a36" />
+          <circle cx="9" cy="9" r="1.2" fill="#284026" />
         </pattern>
+        <linearGradient id="fm-water" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#38b6f0" />
+          <stop offset="1" stopColor="#1478c8" />
+        </linearGradient>
       </defs>
-      <rect width="680" height="540" fill="#4d4d4d" />
-      <rect x="55" y="0" width="365" height="250" fill="#3d5239" />
+      <rect width="1273" height="1003" fill="#555" />
+      <rect x="103" y="0" width="687" height="395" fill="url(#fm-lawn)" />
+      <rect x="175" y="395" width="320" height="80" fill="url(#fm-lawn)" />
       {/* Senderos */}
-      <g fill="none" stroke="#c9c1ae" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M205 272 L270 215 L420 215" strokeWidth="14" />
-        <path d="M205 272 L120 262 L70 215" strokeWidth="12" />
-        <path d="M205 272 L120 300" strokeWidth="9" />
-        <path d="M120 262 L118 330" strokeWidth="9" />
+      <path d="M718 60h72v270H505l-121 108" fill="none" stroke="#c9c1ae" strokeWidth="26" strokeLinejoin="round" />
+      <path d="M582 210h208v120H582Z" fill="#c9c1ae" />
+      <path d="M92 300 64 330l60 60 40-40M104 330c60 0 110 40 130 90l150 10M215 420l20 140" fill="none" stroke="#c9c1ae" strokeWidth="22" strokeLinecap="round" />
+      <circle cx="384" cy="430" r="44" fill="#c9c1ae" />
+      <path d="M140 76 178 114 140 152 102 114Z" fill="#c9c1ae" />
+      {/* Escenario */}
+      <g transform="rotate(38 306 300)">
+        <rect x="186" y="180" width="240" height="240" fill="#a9a39a" stroke="#6b4a33" strokeWidth="10" />
+        <rect x="200" y="194" width="212" height="212" fill="#b9b3aa" />
+        <path d="M186 180h160l-40 70-120 40Z" fill="#8a5a2e" />
       </g>
-      <path d="M310 215 V160 H380 V75 H420 V215Z" fill="#c9c1ae" />
-      <circle cx="205" cy="272" r="24" fill="#c9c1ae" />
-      <path d="M28 172 80 120 150 190 98 242Z" fill="#c9c1ae" />
-      <rect x="66" y="88" width="26" height="26" transform="rotate(45 79 101)" fill="#c9c1ae" />
-
-      <rect x="262" y="250" width="418" height="290" fill="url(#grass)" />
-
-      {zone(
-        'escenario',
-        <g transform="rotate(42 178 170)">
-          <rect className="hit" x="112" y="104" width="132" height="132" fill="#b3aea6" stroke="#6b4a33" strokeWidth="5" />
-          <path d="M112 104h76l-22 40-54 20Z" fill="#8a5a2e" />
-        </g>,
-      )}
-      {zone('voley', court(428, '#7c4ddb', '#f7d98a', '#7c4ddb', 'Cancha de vóley'))}
-      {zone('basquet', court(558, '#1b3fae', '#f26a1b', '#1b3fae', 'Cancha de básquet'))}
-      {zone('cancha1', pitch(300, 268))}
-      {zone('cancha4', pitch(474, 268))}
-      {zone('cancha2', pitch(300, 396))}
-      {zone('cancha3', pitch(474, 396))}
-      {zone(
-        'piscina',
-        <g transform="rotate(-30 150 420)">
-          <rect className="hit" x="88" y="312" width="124" height="216" rx="12" fill="#eadfd3" />
-          <rect x="100" y="326" width="100" height="188" fill="url(#water)" />
-        </g>,
-      )}
+      {court(803, '#7c4ddb', '#f7d98a', '#7c4ddb')}
+      {court(1044, '#1b3fae', '#f26a1b', '#1b3fae')}
+      {/* Campo de fútbol */}
+      <rect x="495" y="388" width="778" height="615" fill="url(#fm-grass)" />
+      <g fill="none" stroke="rgba(255,255,255,.75)" strokeWidth="3">
+        <rect x="515" y="470" width="368" height="248" rx="6" />
+        <rect x="885" y="470" width="368" height="248" rx="6" />
+        <rect x="515" y="720" width="368" height="230" rx="6" />
+        <rect x="885" y="720" width="368" height="230" rx="6" />
+        <circle cx="699" cy="594" r="34" />
+        <circle cx="1069" cy="594" r="34" />
+        <circle cx="699" cy="835" r="34" />
+        <circle cx="1069" cy="835" r="34" />
+      </g>
+      {bleachers(510, 398, 3)}
+      {bleachers(895, 398, 4)}
+      {bleachers(510, 955, 4)}
+      {bleachers(895, 955, 4)}
+      {/* Piscina */}
+      <g transform="rotate(-33 300 760)">
+        <rect x="170" y="555" width="260" height="410" rx="22" fill="#eadfd3" />
+        <rect x="192" y="578" width="216" height="364" fill="url(#fm-water)" />
+        {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+          <line key={i} x1={192 + i * 27} y1="582" x2={192 + i * 27} y2="938" stroke="#0f4f8a" strokeWidth="2" strokeDasharray="10 6" opacity="0.6" />
+        ))}
+      </g>
     </svg>
   )
 }

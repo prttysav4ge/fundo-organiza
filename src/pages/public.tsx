@@ -135,7 +135,7 @@ export function Home() {
           <span>
             <i className="dot" /> En curso
           </span>
-          <span>⭐ Tu ciclo juega aquí</span>
+          <span><b className="legend-mine">★</b> Tu ciclo juega aquí</span>
           <span>Toca una zona para ver su programación</span>
         </p>
         {sel && (
