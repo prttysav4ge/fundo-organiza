@@ -20,13 +20,18 @@ export const StatusBadge = ({ status }: { status: Status }) => (
 )
 
 export function ActivityCard({ a }: { a: Activity }) {
-  const { cicloId, bracket, plays } = useStore()
+  const { cicloId, bracket, plays, activities } = useStore()
   const v = venue(a.venueId)
   const d = discipline(a.disciplineId)
   const sides = bracket.sides[a.id]
   const win = a.status === 'finalizado' ? bracket.winner[a.id] : null
   const mine = !!cicloId && plays(a, cicloId)
   const showScore = a.score && !a.wo && (a.status === 'en_curso' || a.status === 'finalizado')
+  // Partidos que dependen de un resultado en disputa.
+  const waitingFor = (a.sides ?? [])
+    .map((sd) => ('winner' in sd ? activities.find((x) => x.id === sd.winner) : undefined))
+    .filter((x) => x?.dispute && x.status !== 'finalizado')
+    .map((x) => `${discipline(x!.disciplineId)?.name} ${x!.code}`)
   const tied = a.status === 'finalizado' && showScore && a.score![0] === a.score![1]
   return (
     <article className={`act${mine ? ' mine' : ''} st-${a.status}`} style={{ borderLeftColor: v.color }}>
@@ -36,7 +41,7 @@ export function ActivityCard({ a }: { a: Activity }) {
       </div>
       <div className="act-body">
         <div className="act-top">
-          <StatusBadge status={a.status} />
+          {a.dispute && a.status !== 'finalizado' ? <span className="badge st-cancelado">⚠️ Resultado en disputa</span> : <StatusBadge status={a.status} />}
           {(a.stage || a.code) && (
             <span className="muted small">
               {a.code && `${a.code} · `}
@@ -80,6 +85,7 @@ export function ActivityCard({ a }: { a: Activity }) {
           {mine && <span className="tag-mine">Tu ciclo</span>}
         </p>
         {a.note && <p className="small muted">{a.note}</p>}
+        {waitingFor.length > 0 && <p className="small hint">⏸️ En espera: el resultado de {waitingFor.join(', ')} está en disputa.</p>}
       </div>
     </article>
   )
@@ -145,4 +151,16 @@ export function OfflineBanner() {
   if (!loaded) return <p className="banner">Cargando datos actualizados…</p>
   if (!online) return <p className="banner warn">Sin conexión: se muestran los últimos datos guardados en este celular.</p>
   return null
+}
+
+/** Aviso para todos cuando los delegados reportan marcadores distintos. */
+export function DisputeBanner() {
+  const { disputes, title } = useStore()
+  if (!disputes.length) return null
+  return (
+    <div className="banner danger" role="alert">
+      <b>⚠️ Resultado en disputa:</b> {disputes.map((a) => title(a)).join(' · ')}. Los delegados reportaron marcadores distintos: el siguiente partido no
+      continúa hasta que se registre el resultado real.
+    </div>
+  )
 }

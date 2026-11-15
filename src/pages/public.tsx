@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, Navigate, Outlet, useNavigate, useParams } from 'react-router-dom'
 import FundoMap from '../components/FundoMap'
-import { ActivityCard, AnnouncementCard, Jersey, Logo, OfflineBanner, STATUS_LABEL } from '../components/ui'
+import { ActivityCard, AnnouncementCard, DisputeBanner, Jersey, Logo, OfflineBanner, STATUS_LABEL } from '../components/ui'
 import { GINCANA_POINTS } from '../data/bracket'
 import { DISCIPLINES, EVENT, GROUPS } from '../data/seed'
 import { byStart, daysToEvent, discipline, group, teamGroup, teamName, teamsFor, useStore, venue } from '../data/store'
@@ -83,6 +83,7 @@ export function Layout() {
       </header>
       <main>
         <OfflineBanner />
+        <DisputeBanner />
         <Outlet />
       </main>
       <nav className="bottomnav">
@@ -352,7 +353,17 @@ export function DisciplinePage() {
 
       {d.format === 'duelo' && direct && (
         <p className="card info">
-          <b>Pase directo a la final:</b> {direct.team ? teamName(direct.team) : 'por definir'}. <span className="muted">{direct.reason}</span>
+          <b>Pase directo a la final:</b>{' '}
+          {direct.team ? (
+            <>✅ {teamName(direct.team)} (confirmado por el árbitro).</>
+          ) : direct.forecast ? (
+            <>
+              <b>Pronóstico:</b> es probable que el {teamName(direct.forecast)} pase directo a la final ({direct.reason}).{' '}
+              <span className="muted">Lo confirma el árbitro.</span>
+            </>
+          ) : (
+            <span className="muted">{direct.candidates.length ? `Sin pronóstico: ${direct.reason}. Lo confirma el árbitro.` : direct.reason}</span>
+          )}
         </p>
       )}
 

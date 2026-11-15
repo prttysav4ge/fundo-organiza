@@ -24,7 +24,10 @@ export interface GRow {
   firsts: number
 }
 export interface DirectInfo {
+  /** Pase directo confirmado (lo confirma el árbitro / la comisión). */
   team: string | null
+  /** Pronóstico según los criterios de las bases (no es oficial). */
+  forecast: string | null
   candidates: string[]
   reason: string
 }
@@ -103,44 +106,42 @@ export function computeBracket(acts: Activity[], overrides: Record<string, strin
 
   function direct(d: string) {
     if (dMemo[d]) return dMemo[d]
-    const ws = acts.filter((a) => a.disciplineId === d && a.stage === R2).map((a) => winner(a.id))
-    const none = (reason: string) => (dMemo[d] = { team: null, candidates: [], semi: [null, null], reason })
+    // Mismo orden que el servidor: partidos de 2.ª ronda ordenados por id.
+    const r2 = acts.filter((a) => a.disciplineId === d && a.stage === R2).sort((a, b) => a.id.localeCompare(b.id))
+    const ws = r2.map((a) => winner(a.id))
+    const none = (reason: string) => (dMemo[d] = { team: null, forecast: null, candidates: [], semi: [null, null], reason })
     if (ws.some((x) => x === null)) return none('Se define al terminar la 2.ª ronda.')
     const teams = ws.filter((x) => x !== 'none') as string[]
     if (teams.length < 3) {
       // Con dobles W.O. no hay tres ganadores: los que quedan avanzan sin semifinal.
       return (dMemo[d] = {
         team: teams[0] ?? 'none',
+        forecast: null,
         candidates: teams,
         semi: [teams[1] ?? 'none', 'none'],
         reason: 'Menos de tres ganadores en 2.ª ronda: no se juega semifinal.',
       })
     }
+    // Pronóstico según las bases.
     const elig = teams.filter((x) => x !== NO_DIRECT[d])
-    let team: string | null = null
-    let reason = ''
-    if (overrides[d] && teams.includes(overrides[d])) {
-      team = overrides[d]
-      reason = 'Definido por la comisión organizadora.'
-    } else {
-      const metric = (x: string) => (d === 'futbol' ? stat(d, x, true).diff : d === 'voley' ? -stat(d, x, false).lost : stat(d, x, false).diff)
-      const best = Math.max(...elig.map(metric))
-      let tied = elig.filter((x) => metric(x) === best)
-      reason = d === 'futbol' ? 'Mayor diferencia de goles en 2.ª ronda.' : d === 'voley' ? 'Menos sets perdidos en el torneo.' : 'Mayor diferencia de puntos en el torneo.'
-      if (tied.length > 1 && gincanaDone) {
-        const key = (x: string) => {
-          const r = gincana.find((g) => g.group === teamGroup(x))
-          return r ? r.points * 100 + r.firsts : -1
-        }
-        const top = Math.max(...tied.map(key))
-        tied = tied.filter((x) => key(x) === top)
-        reason = 'Empate resuelto por la tabla de la gincana.'
+    const metric = (x: string) => (d === 'futbol' ? stat(d, x, true).diff : d === 'voley' ? -stat(d, x, false).lost : stat(d, x, false).diff)
+    const best = Math.max(...elig.map(metric))
+    let tied = elig.filter((x) => metric(x) === best)
+    let reason = d === 'futbol' ? 'mayor diferencia de goles en 2.ª ronda' : d === 'voley' ? 'menos sets perdidos en el torneo' : 'mayor diferencia de puntos en el torneo'
+    if (tied.length > 1 && gincanaDone) {
+      const key = (x: string) => {
+        const r = gincana.find((g) => g.group === teamGroup(x))
+        return r ? r.points * 100 + r.firsts : -1
       }
-      if (tied.length === 1) team = tied[0]
-      else reason = gincanaDone ? 'Empate: lo define la comisión organizadora.' : 'Empate: se resuelve con la tabla final de la gincana.'
+      const top = Math.max(...tied.map(key))
+      tied = tied.filter((x) => key(x) === top)
+      reason = 'empate resuelto con la tabla de la gincana'
     }
+    const forecast = tied.length === 1 ? tied[0] : null
+    if (!forecast) reason = gincanaDone ? 'hay empate entre varios equipos' : 'hay empate; se desempata con la tabla final de la gincana'
+    const team = overrides[d] && teams.includes(overrides[d]) ? overrides[d] : null
     const rest = teams.filter((x) => x !== team)
-    return (dMemo[d] = { team, candidates: teams, semi: team ? [rest[0], rest[1]] : [null, null], reason })
+    return (dMemo[d] = { team, forecast, candidates: teams, semi: team ? [rest[0], rest[1]] : [null, null], reason })
   }
 
   const out: Bracket = { sides: {}, winner: {}, direct: {}, gincana, gincanaDone }
@@ -148,7 +149,7 @@ export function computeBracket(acts: Activity[], overrides: Record<string, strin
     if (team === 'none') return 'Sin rival'
     if (team) return teamName(team)
     if ('winner' in s) return `Ganador ${byId[s.winner].code}`
-    if ('slot' in s) return s.slot === 'direct' ? 'Pase directo' : 'Ganador de 2.ª ronda'
+    if ('slot' in s) return s.slot === 'direct' ? 'Pase directo (por confirmar)' : 'Ganador de 2.ª ronda'
     return 'label' in s ? s.label : ''
   }
   acts.forEach((a) => {
@@ -159,8 +160,8 @@ export function computeBracket(acts: Activity[], overrides: Record<string, strin
     out.winner[a.id] = wn === 'none' ? null : wn
   })
   DISCIPLINES.filter((d) => d.format === 'duelo').forEach((d) => {
-    const { team, candidates, reason } = direct(d.id)
-    out.direct[d.id] = { team: team === 'none' ? null : team, candidates, reason }
+    const { team, forecast, candidates, reason } = direct(d.id)
+    out.direct[d.id] = { team: team === 'none' ? null : team, forecast, candidates, reason }
   })
   return out
 }

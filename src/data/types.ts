@@ -13,9 +13,9 @@ export interface Group {
 }
 
 export interface RosterRule {
+  /** Máximo de inscritos por equipo; sin valor = ilimitado. */
   max?: number
   jersey: boolean
-  gender?: boolean
   /** Cuenta para el límite de 2 deportes y excluye de la gincana. */
   sport: boolean
 }
@@ -61,6 +61,8 @@ export interface Activity {
   /** Ganador explícito: por penales o por W.O. ('none' = doble W.O.). */
   winner?: string
   wo?: boolean
+  /** Los dos delegados reportaron marcadores distintos. */
+  dispute?: boolean
   /** Gincana: grupos en orden de puesto (1.° a 4.°). */
   places?: string[]
   /** Ajedrez: campeón individual. */
@@ -77,8 +79,9 @@ export interface Participant {
   disciplineId: string
   name: string
   upaoId: string
+  dni: string
+  email: string
   jersey?: number
-  gender?: 'F' | 'M'
   status: 'pendiente' | 'confirmado'
 }
 
@@ -99,7 +102,20 @@ export interface Correction {
   status: 'pendiente' | 'resuelta' | 'rechazada'
 }
 
+/** Resultado que reporta el delegado de uno de los ciclos del partido. */
+export interface ScoreReport {
+  activityId: string
+  groupId: string
+  /** Marcador en el orden de los lados del partido. */
+  score: [number, number]
+  /** Ganador por penales o por W.O. ('none' = doble W.O.). */
+  winner?: string
+  wo?: boolean
+  date: string
+}
+
 export interface EventData {
+  reports: ScoreReport[]
   activities: Activity[]
   participants: Participant[]
   announcements: Announcement[]

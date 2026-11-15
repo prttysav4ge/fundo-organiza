@@ -12,6 +12,7 @@ aplican en el servidor (`supabase/schema.sql`).
 ## Base de datos
 
 1. En Supabase › SQL Editor, ejecuta `supabase/schema.sql` y luego `supabase/seed.sql`.
+   `schema.sql` se puede volver a ejecutar para actualizar: no borra datos.
 2. Crea las cuentas con contraseñas propias (no se guardan en el repositorio):
 
 ```sql
@@ -30,9 +31,15 @@ La conexión está en `src/config.ts` (solo la clave pública *anon*).
 - **Competencias:** fútbol, vóley y básquet con llave de eliminación que avanza sola (ganadores,
   W.O., penales, pase directo a la final según las bases); gincana con tabla de puntos (5/3/2/1);
   fútbol y básquet damas; ajedrez blitz abierto (campeón individual); concurso tecnológico (información).
-- **Delegados de ciclo:** inscriben con nombre, ID UPAO y número de polo. Se aplican las reglas de
-  las bases: plazo de inscripción, máximo 2 deportes, gincana excluyente, un solo ciclo por
-  estudiante, número único por equipo y cupos por deporte. Lo enviado no se edita: se solicita corrección.
+- **Delegados de ciclo:** inscriben con N.° de polo (fútbol, vóley, básquet), nombre «Apellidos, Nombres»,
+  ID UPAO (6 o 9 dígitos), DNI y correo institucional. Cupos por equipo: fútbol 10 (1.er ciclo: equipos
+  A y B), vóley 8, básquet 8, gincana 8; fútbol damas, básquet damas y ajedrez sin límite. Máximo 2 de
+  fútbol/vóley/básquet; la gincana solo para quien no está en esos tres. Lo enviado no se edita: se
+  solicita corrección.
+- **Resultados con doble confirmación:** los delegados de los dos ciclos registran el marcador. Si
+  coinciden, el partido se cierra y el ganador avanza solo; si no, queda en disputa, se avisa a todos y
+  el siguiente partido espera. El pase directo a la final se muestra como pronóstico y lo confirma la
+  comisión según el árbitro.
 - **Comisión organizadora:** estados, marcadores, horarios y lugares (con detección de cruces),
   puestos de la gincana, pase directo en caso de empate, confirmación de inscripciones,
   correcciones, anuncios por ciclo y actividades adicionales.

@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Logo, OfflineBanner, STATUS_LABEL } from '../components/ui'
+import { DisputeBanner, Logo, OfflineBanner, STATUS_LABEL } from '../components/ui'
 import { DISCIPLINES, EVENT, GROUPS, VENUES } from '../data/seed'
-import { REMOTE, byStart, discipline, fmtDate, group, teamName, teamsFor, useStore } from '../data/store'
-import type { Activity, Announcement, Correction, Participant, Status } from '../data/types'
+import { REMOTE, byStart, discipline, fmtDate, fmtTime, group, teamName, teamsFor, useStore } from '../data/store'
+import type { Activity, Announcement, Correction, Participant, ScoreReport, Status } from '../data/types'
 
 const ROSTERED = DISCIPLINES.filter((d) => d.roster)
 const MIN_PLAYERS: Record<string, number> = { futbol: 7, voley: 6, basquet: 5 }
@@ -30,6 +30,7 @@ export default function Manage() {
       <main>
         <div className="page">
           <OfflineBanner />
+          <DisputeBanner />
           {!session ? <Login /> : session.role === 'admin' ? <Admin /> : <Delegate groupId={session.groupId!} />}
           {session && REMOTE && <ChangePassword />}
         </div>
@@ -80,29 +81,61 @@ function Login() {
   )
 }
 
+const teamLabel = (t: string) => (t.includes('.') ? `Equipo ${t.endsWith('.1') ? 'A' : 'B'} (${t.slice(1)})` : '')
+
 const PName = ({ p }: { p: Participant }) => (
   <strong>
     {p.jersey != null && <span className="num">#{p.jersey} </span>}
     {p.name}
-    {p.gender === 'F' && <span className="small muted"> · mujer</span>}
-    {p.teamId !== p.groupId && <span className="small muted"> · equipo {p.teamId.slice(1)}</span>}
+    {p.teamId !== p.groupId && <span className="small muted"> · {teamLabel(p.teamId)}</span>}
   </strong>
 )
 const PBadge = ({ p }: { p: Participant }) => (
   <span className={`badge ${p.status === 'confirmado' ? 'ok' : 'warn'}`}>{p.status === 'confirmado' ? 'Confirmado' : 'Por confirmar'}</span>
 )
+const PData = ({ p }: { p: Participant }) => (
+  <span className="small muted pdata">
+    ID {p.upaoId} · DNI {p.dni} · {p.email}
+  </span>
+)
 
 function Delegate({ groupId }: { groupId: string }) {
+  const { activities, bracket } = useStore()
+  const g = group(groupId)!
+  const [tab, setTab] = useState<'Inscripciones' | 'Resultados'>('Inscripciones')
+  const pendingReports = activities.filter((a) => {
+    const s = bracket.sides[a.id]
+    return s && s.every((x) => x.team) && s.some((x) => x.team!.split('.')[0] === groupId) && (a.status === 'en_curso' || a.dispute)
+  }).length
+  return (
+    <>
+      <h1>Delegado · {g.name}</h1>
+      <div className="seg wrap" role="tablist">
+        {(['Inscripciones', 'Resultados'] as const).map((t) => (
+          <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>
+            {t}
+            {t === 'Resultados' && pendingReports > 0 && <span className="count">{pendingReports}</span>}
+          </button>
+        ))}
+      </div>
+      {tab === 'Inscripciones' ? <DelegateRoster groupId={groupId} /> : <DelegateResults groupId={groupId} />}
+    </>
+  )
+}
+
+function DelegateRoster({ groupId }: { groupId: string }) {
   const { participants, corrections, addParticipant, requestCorrection, inscriptionsOpen: open } = useStore()
   const g = group(groupId)!
   const [did, setDid] = useState(ROSTERED[0].id)
   const d = discipline(did)!
   const rule = d.roster!
   const teams = teamsFor(did, groupId)
-  const [f, setF] = useState({ name: '', upaoId: '', jersey: '', gender: '', team: '' })
+  const empty = { name: '', upaoId: '', dni: '', email: '', jersey: '' }
+  const [f, setF] = useState({ ...empty, team: '' })
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [asking, setAsking] = useState<string | null>(null)
   const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
   const mine = participants.filter((p) => p.groupId === groupId)
   const list = mine.filter((p) => p.disciplineId === did)
   const teamId = teams.includes(f.team) ? f.team : teams[0]
@@ -110,14 +143,11 @@ function Delegate({ groupId }: { groupId: string }) {
 
   const hints: string[] = []
   teams.forEach((t) => {
-    const n = list.filter((p) => p.teamId === t)
-    const tag = teams.length > 1 ? ` (equipo ${t.slice(1)})` : ''
-    if (MIN_PLAYERS[did] && n.length < MIN_PLAYERS[did]) hints.push(`Faltan ${MIN_PLAYERS[did] - n.length} para el mínimo de ${MIN_PLAYERS[did]} en cancha${tag}.`)
-    if (did === 'voley' && n.length > 0 && n.filter((p) => p.gender === 'F').length < 2) hints.push('El vóley exige mínimo 2 mujeres en cancha.')
-    if (did === 'gincana' && n.length !== 10) hints.push(`La gincana requiere exactamente 10 personas: llevas ${n.length}.`)
+    const n = list.filter((p) => p.teamId === t).length
+    const tag = teams.length > 1 ? ` (${teamLabel(t)})` : ''
+    if (MIN_PLAYERS[did] && n < MIN_PLAYERS[did]) hints.push(`Faltan ${MIN_PLAYERS[did] - n} para el mínimo de ${MIN_PLAYERS[did]} en cancha${tag}.`)
   })
 
-  const [busy, setBusy] = useState(false)
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setBusy(true)
@@ -126,18 +156,18 @@ function Delegate({ groupId }: { groupId: string }) {
       teamId,
       disciplineId: did,
       name: f.name,
-      upaoId: f.upaoId,
+      upaoId: f.upaoId.trim(),
+      dni: f.dni.trim(),
+      email: f.email.trim().toLowerCase(),
       jersey: rule.jersey ? +f.jersey : undefined,
-      gender: rule.gender ? (f.gender as 'F' | 'M') || undefined : undefined,
     })
     setBusy(false)
     setMsg(err ? { ok: false, text: err } : { ok: true, text: 'Participante registrado. Queda pendiente de confirmación.' })
-    if (!err) setF({ ...f, name: '', upaoId: '', jersey: '', gender: '' })
+    if (!err) setF({ ...f, ...empty })
   }
 
   return (
     <>
-      <h1>Delegado · {g.name}</h1>
       <p className="muted">
         Inscribe a los participantes de tu ciclo ({g.theme}). Una vez enviados no se editan: solicita la corrección a la comisión organizadora.
       </p>
@@ -155,9 +185,14 @@ function Delegate({ groupId }: { groupId: string }) {
       <div className="chips">
         {ROSTERED.map((x) => {
           const n = mine.filter((p) => p.disciplineId === x.id).length
+          const max = x.roster!.max ? x.roster!.max * teamsFor(x.id, groupId).length : null
           return (
             <button key={x.id} className={`chip big${x.id === did ? ' on' : ''}`} onClick={() => (setDid(x.id), setMsg(null))}>
-              {x.icon} {x.name} <span className="count">{n}</span>
+              {x.icon} {x.name}{' '}
+              <span className="count">
+                {n}
+                {max ? `/${max}` : ''}
+              </span>
             </button>
           )
         })}
@@ -166,38 +201,46 @@ function Delegate({ groupId }: { groupId: string }) {
       {open && (
         <form className="card form" onSubmit={submit}>
           <h2>Inscribir en {d.name}</h2>
+          <p className="small muted">
+            {rule.max ? `Máximo ${rule.max} por equipo.` : 'Sin límite de inscritos.'}{' '}
+            {rule.sport
+              ? 'Cuenta para el límite de 2 deportes (fútbol, vóley o básquet).'
+              : did === 'gincana'
+                ? 'Solo para quienes no están en fútbol, vóley ni básquet.'
+                : 'No cuenta para el límite de 2 deportes.'}
+          </p>
           <div className="row">
-            <label className="grow">
-              Nombres y apellidos
-              <input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required />
-            </label>
-            <label>
-              ID UPAO
-              <input inputMode="numeric" maxLength={9} placeholder="6 o 9 dígitos" value={f.upaoId} onChange={(e) => setF({ ...f, upaoId: e.target.value })} required style={{ width: 140 }} />
-            </label>
             {rule.jersey && (
               <label>
                 N.° de polo
-                <input type="number" min={1} max={99} value={f.jersey} onChange={(e) => setF({ ...f, jersey: e.target.value })} required style={{ width: 100 }} />
+                <input id="f-jersey" type="number" min={1} max={99} value={f.jersey} onChange={(e) => setF({ ...f, jersey: e.target.value })} required style={{ width: 100 }} />
               </label>
             )}
-            {rule.gender && (
-              <label>
-                Sexo
-                <select value={f.gender} onChange={(e) => setF({ ...f, gender: e.target.value })} required>
-                  <option value="">Elegir…</option>
-                  <option value="F">Mujer</option>
-                  <option value="M">Varón</option>
-                </select>
-              </label>
-            )}
+            <label className="grow">
+              Nombre completo (Apellidos, Nombres)
+              <input id="f-name" placeholder="Rojas Cruz, Ana María" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required />
+            </label>
+          </div>
+          <div className="row">
+            <label>
+              ID UPAO
+              <input id="f-id" inputMode="numeric" maxLength={9} placeholder="6 o 9 dígitos" value={f.upaoId} onChange={(e) => setF({ ...f, upaoId: e.target.value })} required style={{ width: 140 }} />
+            </label>
+            <label>
+              DNI
+              <input id="f-dni" inputMode="numeric" maxLength={8} placeholder="8 dígitos" value={f.dni} onChange={(e) => setF({ ...f, dni: e.target.value })} required style={{ width: 130 }} />
+            </label>
+            <label className="grow">
+              Correo institucional
+              <input id="f-email" type="email" placeholder="usuario@upao.edu.pe" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} required />
+            </label>
             {teams.length > 1 && (
               <label>
                 Equipo
-                <select value={teamId} onChange={(e) => setF({ ...f, team: e.target.value })}>
+                <select id="f-team" value={teamId} onChange={(e) => setF({ ...f, team: e.target.value })}>
                   {teams.map((t) => (
                     <option key={t} value={t}>
-                      {t.slice(1)}
+                      {teamLabel(t)}
                     </option>
                   ))}
                 </select>
@@ -224,12 +267,10 @@ function Delegate({ groupId }: { groupId: string }) {
         {list.map((p) => (
           <div key={p.id} className="card item">
             <div className="item-main">
-              <span>
-                <PName p={p} />
-                <span className="small muted"> · ID {p.upaoId}</span>
-              </span>
+              <PName p={p} />
               <PBadge p={p} />
             </div>
+            <PData p={p} />
             {pendingFor(p.id) ? (
               <span className="small muted">Corrección solicitada</span>
             ) : asking === p.id ? (
@@ -257,6 +298,128 @@ function Delegate({ groupId }: { groupId: string }) {
         {!list.length && <p className="muted">Aún no inscribes a nadie en {d.name}.</p>}
       </div>
     </>
+  )
+}
+
+/** Partidos del ciclo del delegado, para registrar el marcador. */
+function DelegateResults({ groupId }: { groupId: string }) {
+  const { activities, bracket, reports } = useStore()
+  const mine = [...activities]
+    .sort(byStart)
+    .filter((a) => {
+      const s = bracket.sides[a.id]
+      return s && s.every((x) => x.team) && s.some((x) => x.team!.split('.')[0] === groupId) && a.status !== 'cancelado'
+    })
+  return (
+    <>
+      <p className="muted">
+        Registra el resultado de cada partido de tu ciclo apenas termine. El delegado del otro ciclo también lo registra: si los dos marcadores coinciden, el
+        resultado se confirma solo y el ganador avanza. Si no coinciden, el partido queda <b>en disputa</b> y se avisa a todos hasta que se corrija.
+      </p>
+      <div className="list">
+        {mine.map((a) => (
+          <ReportItem key={a.id} a={a} groupId={groupId} reports={reports.filter((r) => r.activityId === a.id)} />
+        ))}
+        {!mine.length && <p className="muted">Tu ciclo no tiene partidos definidos por ahora. Los de 2.ª ronda en adelante aparecen cuando se conoce el rival.</p>}
+      </div>
+    </>
+  )
+}
+
+function ReportItem({ a, groupId, reports }: { a: Activity; groupId: string; reports: ScoreReport[] }) {
+  const { bracket, title, reportScore } = useStore()
+  const sides = bracket.sides[a.id]
+  const d = discipline(a.disciplineId)
+  const mineRep = reports.find((r) => r.groupId === groupId)
+  const [open, setOpen] = useState(false)
+  const [f, setF] = useState({ s0: mineRep?.score[0] ?? 0, s1: mineRep?.score[1] ?? 0, wo: !!mineRep?.wo, winner: mineRep?.winner ?? '' })
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const closed = a.status === 'finalizado'
+  const groups = [...new Set(sides.map((s) => s.team!.split('.')[0]))]
+  const tie = !f.wo && f.s0 === f.s1
+  const fmt = (r: ScoreReport) => (r.wo ? `W.O. · gana ${r.winner === 'none' ? 'nadie' : teamName(r.winner!)}` : `${r.score[0]} – ${r.score[1]}${r.winner ? ` (penales: ${teamName(r.winner)})` : ''}`)
+
+  const send = async (e: FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    const res = await reportScore(a.id, { score: [f.s0, f.s1], wo: f.wo, winner: f.winner || undefined })
+    setBusy(false)
+    setErr(res ?? '')
+    if (!res) setOpen(false)
+  }
+
+  return (
+    <div className={`card item${a.dispute ? ' disputed' : ''}`}>
+      <div className="item-main">
+        <strong>
+          {fmtTime(a.start)} · {title(a)}
+        </strong>
+        {a.dispute ? <span className="badge st-cancelado">En disputa</span> : <span className={`badge st-${a.status}`}>{STATUS_LABEL[a.status]}</span>}
+      </div>
+      <ul className="reports">
+        {groups.map((gid) => {
+          const r = reports.find((x) => x.groupId === gid)
+          return (
+            <li key={gid}>
+              {group(gid)!.name}: {r ? <b>{fmt(r)}</b> : <span className="muted">sin registrar</span>}
+            </li>
+          )
+        })}
+      </ul>
+      {closed ? (
+        <span className="small result">Resultado confirmado{a.score && !a.wo ? `: ${a.score[0]} – ${a.score[1]}` : ''}</span>
+      ) : !open ? (
+        <button className="btn primary" onClick={() => setOpen(true)}>
+          {mineRep ? 'Corregir mi resultado' : 'Registrar resultado'}
+        </button>
+      ) : (
+        <form className="form" onSubmit={send}>
+          <label className="check">
+            <input type="checkbox" checked={f.wo} onChange={(e) => setF({ ...f, wo: e.target.checked, winner: '' })} /> Se definió por W.O.
+          </label>
+          {!f.wo && (
+            <div className="row">
+              {sides.map((s, i) => (
+                <label key={i}>
+                  {d?.unit} · {s.label}
+                  <input
+                    type="number"
+                    min={0}
+                    value={i ? f.s1 : f.s0}
+                    onChange={(e) => setF({ ...f, [i ? 's1' : 's0']: Math.max(0, Math.floor(+e.target.value)) })}
+                    style={{ width: 110 }}
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+          {(f.wo || (tie && d?.unit === 'Goles')) && (
+            <label>
+              {f.wo ? 'Gana por W.O.' : 'Ganador en penales'}
+              <select value={f.winner} onChange={(e) => setF({ ...f, winner: e.target.value })} required>
+                <option value="">Elegir…</option>
+                {sides.map((s) => (
+                  <option key={s.team!} value={s.team!}>
+                    {s.label}
+                  </option>
+                ))}
+                {f.wo && <option value="none">Ninguno (doble W.O.)</option>}
+              </select>
+            </label>
+          )}
+          {err && <p className="error">{err}</p>}
+          <div className="row">
+            <button className="btn primary" disabled={busy}>
+              {busy ? 'Enviando…' : 'Enviar resultado'}
+            </button>
+            <button type="button" className="btn ghost" onClick={() => setOpen(false)}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
   )
 }
 
@@ -309,11 +472,20 @@ function AdminActivities() {
           return (
             <div key={d.id} className="row">
               <span className="grow">
-                <b>{d.name}:</b> {info.team ? teamName(info.team) : 'por definir'} <span className="small muted">{info.reason}</span>
+                <b>{d.name}:</b>{' '}
+                {info.team ? (
+                  <>✅ Confirmado: {teamName(info.team)}</>
+                ) : info.forecast ? (
+                  <>
+                    Pronóstico: {teamName(info.forecast)} <span className="small muted">({info.reason}). Confírmalo con el árbitro.</span>
+                  </>
+                ) : (
+                  <span className="muted">{info.candidates.length ? info.reason : 'Se define al terminar la 2.ª ronda.'}</span>
+                )}
               </span>
               {info.candidates.length === 3 && (
                 <select value={directOverride[d.id] ?? ''} onChange={(e) => setDirect(d.id, e.target.value)} aria-label={`Pase directo en ${d.name}`}>
-                  <option value="">Según las bases</option>
+                  <option value="">Sin confirmar</option>
                   {info.candidates.map((t) => (
                     <option key={t} value={t}>
                       {teamName(t)}
@@ -333,7 +505,7 @@ function AdminActivities() {
               <strong>
                 {a.start} · {title(a)}
               </strong>
-              <span className={`badge st-${a.status}`}>{STATUS_LABEL[a.status]}</span>
+              {a.dispute && a.status !== 'finalizado' ? <span className="badge st-cancelado">En disputa</span> : <span className={`badge st-${a.status}`}>{STATUS_LABEL[a.status]}</span>}
             </button>
             {open === a.id && <ActivityEditor a={a} onDone={() => setOpen(null)} />}
           </div>
@@ -412,6 +584,8 @@ function ActivityEditor({ a, onDone }: { a: Activity; onDone: () => void }) {
   const save = async (e: FormEvent) => {
     e.preventDefault()
     const patch: Partial<Activity> = { start: f.start, end: f.end, venueId: f.venueId, status: f.status }
+    // La comisión resuelve la disputa al cerrar el partido.
+    if (f.status === 'finalizado') patch.dispute = false
     if (sides && playing) {
       if (!ready && !labelled) return setErr('Aún no se definen los dos equipos de este partido.')
       if (f.wo) {
@@ -472,6 +646,8 @@ function ActivityEditor({ a, onDone }: { a: Activity; onDone: () => void }) {
           </select>
         </label>
       </div>
+
+      {sides && <EditorReports a={a} />}
 
       {sides && playing && (
         <>
@@ -614,9 +790,10 @@ function AdminParticipants() {
             <div className="item-main">
               <PName p={p} />
               <span className="small muted">
-                {group(p.groupId)!.name} · {discipline(p.disciplineId)!.name} · ID {p.upaoId}
+                {group(p.groupId)!.name} · {discipline(p.disciplineId)!.name}
               </span>
             </div>
+            <PData p={p} />
             <div className="row">
               {p.status === 'pendiente' ? (
                 <button className="btn primary" onClick={() => confirmParticipants([p.id])}>
@@ -655,6 +832,8 @@ function CorrectionItem({ c }: { c: Correction }) {
   const p = participants.find((x) => x.id === c.participantId)
   const [name, setName] = useState(p?.name ?? '')
   const [upaoId, setUpaoId] = useState(p?.upaoId ?? '')
+  const [dni, setDni] = useState(p?.dni ?? '')
+  const [email, setEmail] = useState(p?.email ?? '')
   const [jersey, setJersey] = useState(p?.jersey?.toString() ?? '')
   const [err, setErr] = useState('')
   if (!p) return null
@@ -664,7 +843,7 @@ function CorrectionItem({ c }: { c: Correction }) {
       className="card item form"
       onSubmit={(e) => {
         e.preventDefault()
-        resolveCorrection(c.id, { name, upaoId: upaoId.trim(), jersey: d.roster!.jersey ? +jersey : undefined }).then((r) => setErr(r ?? ''))
+        resolveCorrection(c.id, { name, upaoId: upaoId.trim(), dni: dni.trim(), email: email.trim().toLowerCase(), jersey: d.roster!.jersey ? +jersey : undefined }).then((r) => setErr(r ?? ''))
       }}
     >
       <span className="small muted">
@@ -675,12 +854,20 @@ function CorrectionItem({ c }: { c: Correction }) {
       </p>
       <div className="row">
         <label className="grow">
-          Nombres y apellidos
+          Nombre completo (Apellidos, Nombres)
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
         <label>
           ID UPAO
           <input inputMode="numeric" maxLength={9} value={upaoId} onChange={(e) => setUpaoId(e.target.value)} required style={{ width: 140 }} />
+        </label>
+        <label>
+          DNI
+          <input inputMode="numeric" maxLength={8} value={dni} onChange={(e) => setDni(e.target.value)} required style={{ width: 130 }} />
+        </label>
+        <label className="grow">
+          Correo institucional
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </label>
         {d.roster!.jersey && (
           <label>
@@ -804,5 +991,26 @@ function ChangePassword() {
         <button className="btn primary">Guardar contraseña</button>
       </form>
     </details>
+  )
+}
+
+/** Lo que reportaron los delegados, para que la comisión lo vea al editar. */
+function EditorReports({ a }: { a: Activity }) {
+  const { reports } = useStore()
+  const rs = reports.filter((r) => r.activityId === a.id)
+  if (!rs.length) return null
+  return (
+    <div className={`card info${a.dispute ? ' closed' : ''}`}>
+      <b>{a.dispute ? '⚠️ Los delegados reportaron resultados distintos:' : 'Reportado por los delegados:'}</b>
+      <ul className="reports">
+        {rs.map((r) => (
+          <li key={r.groupId}>
+            {group(r.groupId)!.name}: {r.wo ? `W.O., gana ${r.winner === 'none' ? 'nadie' : teamName(r.winner!)}` : `${r.score[0]} – ${r.score[1]}`}
+            {!r.wo && r.winner ? ` (penales: ${teamName(r.winner)})` : ''}
+          </li>
+        ))}
+      </ul>
+      {a.dispute && <span className="small">Verifica con el árbitro y registra aquí el resultado correcto como «Finalizado».</span>}
+    </div>
   )
 }

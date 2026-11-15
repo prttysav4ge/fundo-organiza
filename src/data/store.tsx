@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { LOCAL_ONLY, SUPABASE } from '../config'
 import { computeBracket, teamGroup, teamName, type Bracket } from './bracket'
 import { DISCIPLINES, EVENT, GROUPS, TEAMS, VENUES, seed } from './seed'
-import type { Activity, Announcement, Correction, EventData, Participant } from './types'
+import type { Activity, Announcement, Correction, EventData, Participant, ScoreReport } from './types'
 
 // Capa de datos. Con Supabase (modo normal) los datos son compartidos y se
 // actualizan en vivo; una copia queda en el navegador para mostrarse sin señal.
@@ -12,7 +12,7 @@ import type { Activity, Announcement, Correction, EventData, Participant } from 
 const sb = LOCAL_ONLY ? null : createClient(SUPABASE.url, SUPABASE.anonKey, { auth: { persistSession: false } })
 export const REMOTE = !!sb
 
-const KEY = REMOTE ? 'fundo-organiza-cache-v1' : 'fundo-organiza-v3'
+const KEY = REMOTE ? 'fundo-organiza-cache-v2' : 'fundo-organiza-v4'
 
 export interface Session {
   role: 'admin' | 'delegado'
@@ -78,6 +78,10 @@ interface Store extends EventData {
   setDirect: (disciplineId: string, team: string) => Result
   addAnnouncement: (a: Omit<Announcement, 'id' | 'date'>) => Result
   removeAnnouncement: (id: string) => Result
+  /** El delegado registra el resultado de un partido de su ciclo. */
+  reportScore: (activityId: string, r: Omit<ScoreReport, 'activityId' | 'groupId' | 'date'>) => Result
+  /** Partidos con marcadores distintos entre delegados. */
+  disputes: Activity[]
   reset: () => void
 }
 
@@ -102,22 +106,30 @@ const save = (k: string, v: unknown) => {
 const uid = () => Math.random().toString(36).slice(2, 10)
 const clean = (s: string) => s.trim().replace(/\s+/g, ' ')
 
-/** Reglas de inscripción de las bases. En modo Supabase el servidor las vuelve a aplicar. */
+export const NAME_RE = /^[^,]+,\s*[^,]+$/
+export const normEmail = (e: string) => e.trim().toLowerCase()
+
+/** Reglas de inscripción. En modo Supabase el servidor las vuelve a aplicar. */
 export function validateParticipant(all: Participant[], p: NewParticipant, ignoreId?: string): string | null {
   const d = discipline(p.disciplineId)
   const rule = d?.roster
   if (!d || !rule) return 'Disciplina no válida.'
   const others = all.filter((x) => x.id !== ignoreId)
-  if (clean(p.name).split(' ').length < 2) return 'Escribe nombres y apellidos completos.'
+  if (!NAME_RE.test(clean(p.name))) return 'Escribe el nombre como «Apellidos, Nombres» (por ejemplo: Rojas Cruz, Ana María).'
   if (!/^(\d{6}|\d{9})$/.test(p.upaoId)) return 'El ID UPAO debe tener 6 o 9 dígitos.'
-  const mine = others.filter((x) => x.upaoId === p.upaoId)
-  const other = mine.find((x) => x.groupId !== p.groupId)
+  if (!/^\d{8}$/.test(p.dni)) return 'El DNI debe tener 8 dígitos.'
+  if (!/^[a-z0-9._%+-]+@upao\.edu\.pe$/.test(normEmail(p.email))) return 'Usa el correo institucional (termina en @upao.edu.pe).'
+  // Los ID de otros ciclos no llegan al navegador del delegado: el servidor completa estas comprobaciones.
+  const same = others.filter((x) => x.upaoId && x.upaoId === p.upaoId)
+  if (same.some((x) => x.dni && x.dni !== p.dni)) return 'Ese ID UPAO ya está registrado con otro DNI.'
+  if (others.some((x) => x.dni && x.dni === p.dni && x.upaoId && x.upaoId !== p.upaoId)) return 'Ese DNI ya está registrado con otro ID UPAO.'
+  const other = same.find((x) => x.groupId !== p.groupId)
   if (other) return `Ese ID ya está inscrito por ${group(other.groupId)!.name}. Cada estudiante participa por un solo ciclo.`
-  if (mine.some((x) => x.disciplineId === p.disciplineId)) return `Ese ID ya está inscrito en ${d.name}.`
-  const sports = mine.filter((x) => discipline(x.disciplineId)?.roster?.sport)
+  if (same.some((x) => x.disciplineId === p.disciplineId)) return `Ese ID ya está inscrito en ${d.name}.`
+  const sports = same.filter((x) => discipline(x.disciplineId)?.roster?.sport)
   if (rule.sport) {
     if (sports.length >= 2) return 'Máximo 2 deportes por jugador (fútbol, vóley o básquet).'
-    if (mine.some((x) => x.disciplineId === 'gincana')) return 'Quien está en la gincana no puede inscribirse en fútbol, vóley ni básquet.'
+    if (same.some((x) => x.disciplineId === 'gincana')) return 'Quien está en la gincana no puede inscribirse en fútbol, vóley ni básquet.'
   }
   if (p.disciplineId === 'gincana' && sports.length) return 'Quien está inscrito en fútbol, vóley o básquet no puede inscribirse en la gincana.'
   const team = others.filter((x) => x.disciplineId === p.disciplineId && x.teamId === p.teamId)
@@ -126,9 +138,27 @@ export function validateParticipant(all: Participant[], p: NewParticipant, ignor
     if (!p.jersey || p.jersey < 1 || p.jersey > 99 || !Number.isInteger(p.jersey)) return 'Indica un número de polo entre 1 y 99.'
     if (team.some((x) => x.jersey === p.jersey)) return `El número ${p.jersey} ya está asignado en este equipo de ${d.name}.`
   }
-  if (rule.gender && !p.gender) return 'Indica si es mujer o varón (el vóley exige mínimo 2 mujeres en cancha).'
   return null
 }
+
+/** Revisa que un marcador sea posible según el deporte. */
+export function validateReport(a: Activity, r: Omit<ScoreReport, 'activityId' | 'groupId' | 'date'>, teams: [string, string]): string | null {
+  const unit = discipline(a.disciplineId)?.unit
+  if (r.wo) {
+    if (!r.winner || ![...teams, 'none'].includes(r.winner)) return 'Indica quién gana por W.O.'
+    return null
+  }
+  const [x, y] = r.score
+  if (![x, y].every((n) => Number.isInteger(n) && n >= 0 && n < 300)) return 'Marcador no válido.'
+  if (unit === 'Sets' && (Math.max(x, y) !== 2 || Math.min(x, y) > 1)) return 'En vóley gana quien llega a 2 sets (2-0 o 2-1).'
+  if (unit === 'Puntos' && x === y) return 'En básquet no hay empate: se define por punto de oro.'
+  if (unit === 'Goles' && x === y && (!r.winner || !teams.includes(r.winner))) return 'Empate: indica quién ganó en penales.'
+  return null
+}
+
+/** Compara reportes: iguales = mismo marcador, mismo W.O. y mismo ganador. */
+const sameReport = (a: ScoreReport, b: ScoreReport) =>
+  a.score[0] === b.score[0] && a.score[1] === b.score[1] && !!a.wo === !!b.wo && (a.winner ?? '') === (b.winner ?? '')
 
 /* ------------------------------------------------------------ Supabase */
 
@@ -140,8 +170,9 @@ const toParticipant = (r: Row): Participant => ({
   disciplineId: r.discipline_id as string,
   name: r.name as string,
   upaoId: (r.upao_id as string) ?? '',
+  dni: (r.dni as string) ?? '',
+  email: (r.email as string) ?? '',
   jersey: (r.jersey as number) ?? undefined,
-  gender: (r.gender as 'F' | 'M') ?? undefined,
   status: r.status as Participant['status'],
 })
 const toCorrection = (r: Row): Correction => ({
@@ -160,13 +191,14 @@ interface Remote {
 }
 
 async function fetchRemote(session: Session | null): Promise<Remote> {
-  const [a, n, s, p] = await Promise.all([
+  const [a, n, s, p, rp] = await Promise.all([
     sb!.from('activities').select('data'),
     sb!.from('announcements').select('data,created_at').order('created_at', { ascending: false }),
     sb!.from('settings').select('key,value'),
     sb!.from('participants_public').select('*').order('created_at'),
+    sb!.from('score_reports').select('*'),
   ])
-  const err = a.error || n.error || s.error || p.error
+  const err = a.error || n.error || s.error || p.error || rp.error
   if (err) throw err
   const settings = Object.fromEntries((s.data ?? []).map((r) => [r.key, r.value]))
   let participants = (p.data ?? []).map(toParticipant)
@@ -184,6 +216,7 @@ async function fetchRemote(session: Session | null): Promise<Remote> {
       announcements: (n.data ?? []).map((r) => r.data as Announcement),
       participants,
       corrections,
+      reports: (rp.data ?? []).map((r) => ({ ...(r.report as Omit<ScoreReport, 'activityId' | 'groupId'>), activityId: r.activity_id, groupId: r.group_id, date: r.updated_at })),
       directOverride: (settings.directOverride as Record<string, string>) ?? {},
     },
     deadline: (settings.deadline as string) ?? EVENT.deadline,
@@ -193,7 +226,7 @@ async function fetchRemote(session: Session | null): Promise<Remote> {
 /* ------------------------------------------------------------ Provider */
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<EventData>(() => load(KEY, seed()))
+  const [data, setData] = useState<EventData>(() => ({ ...seed(), ...load<Partial<EventData>>(KEY, {}) }))
   const [deadline, setDeadline] = useState<string>(() => load(KEY + '-deadline', EVENT.deadline))
   const [online, setOnline] = useState(true)
   const [loaded, setLoaded] = useState(!REMOTE)
@@ -242,6 +275,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, soon)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, soon)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, soon)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'score_reports' }, soon)
       .subscribe()
     const poll = setInterval(refresh, 45_000)
     const onVisible = () => document.visibilityState === 'visible' && refresh()
@@ -396,6 +430,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     removeAnnouncement: (id) =>
       REMOTE ? rpc('admin_delete_announcement', { p_id: id }) : local((d) => ({ ...d, announcements: d.announcements.filter((x) => x.id !== id) })),
+    disputes: data.activities.filter((a) => a.dispute && a.status !== 'finalizado' && a.status !== 'cancelado'),
+    reportScore: async (activityId, r) => {
+      const a = data.activities.find((x) => x.id === activityId)
+      const gid = session?.groupId
+      const sides = bracket.sides[activityId]
+      if (!a || !sides || !gid) return 'Partido no encontrado.'
+      const teams = sides.map((x) => x.team) as [string, string]
+      if (!teams[0] || !teams[1]) return 'Aún no se definen los dos equipos de este partido.'
+      if (!teams.some((t) => teamGroup(t) === gid)) return 'Solo puedes registrar resultados de partidos de tu ciclo.'
+      if (a.status === 'finalizado' || a.status === 'cancelado') return 'Este partido ya está cerrado. Si hay un error, avisa a la comisión organizadora.'
+      const err = validateReport(a, r, teams)
+      if (err) return err
+      const clean: Omit<ScoreReport, 'activityId' | 'groupId' | 'date'> = r.wo ? { score: [0, 0], wo: true, winner: r.winner } : { score: r.score, winner: r.score[0] === r.score[1] ? r.winner : undefined }
+      if (REMOTE) return rpc('report_score', { p_activity: activityId, p_report: clean })
+      // Versión de demostración: misma lógica que el servidor.
+      setData((d) => {
+        const rep: ScoreReport = { ...clean, activityId, groupId: gid, date: new Date().toISOString() }
+        const reports = [...d.reports.filter((x) => !(x.activityId === activityId && x.groupId === gid)), rep]
+        const groups = [...new Set(teams.map(teamGroup))]
+        const mine = groups.map((g) => reports.find((x) => x.activityId === activityId && x.groupId === g))
+        let act = { ...a }
+        if (mine.every(Boolean)) {
+          if (mine.every((x) => sameReport(x!, mine[0]!)))
+            act = { ...act, status: 'finalizado', score: rep.wo ? undefined : rep.score, wo: !!rep.wo, winner: rep.winner, dispute: false }
+          else act = { ...act, dispute: true }
+        }
+        return { ...d, reports, activities: d.activities.map((x) => (x.id === activityId ? act : x)) }
+      })
+      return null
+    },
     reset: () => {
       if (!REMOTE) setData(seed())
     },

@@ -41,6 +41,7 @@ export const TEAMS: Record<string, Record<string, string[]>> = { futbol: { c1: [
 
 const elim = 'Eliminación directa. De los tres ganadores de la 2.ª ronda, uno pasa directo a la final y los otros dos juegan la semifinal.'
 const common = [
+  'El resultado lo registran los delegados de los dos ciclos del partido. Si sus marcadores no coinciden, el partido queda en disputa y no se avanza hasta corregirlo.',
   'Sin tolerancia: el equipo que no esté completo a la hora programada pierde por W.O.',
   'Todos juegan con el polo de su ciclo y un número distinto dentro del equipo.',
   'Antes de cada partido se muestra el carnet universitario o el campus virtual.',
@@ -71,7 +72,7 @@ export const DISCIPLINES: Discipline[] = [
     icon: '🏐',
     format: 'duelo',
     unit: 'Sets',
-    roster: { max: 8, jersey: true, gender: true, sport: true },
+    roster: { max: 8, jersey: true, sport: true },
     summary: '11 equipos mixtos. El 1.er ciclo pasa directo a la 2.ª ronda por sorteo.',
     rules: [
       elim,
@@ -106,10 +107,10 @@ export const DISCIPLINES: Discipline[] = [
     name: 'Gincana',
     icon: '🎯',
     format: 'puntos',
-    roster: { max: 10, jersey: false, sport: false },
+    roster: { max: 8, jersey: false, sport: false },
     summary: '5 juegos seguidos en la cancha 4, de 10:30 a 11:50 a. m.',
     rules: [
-      'Cada ciclo inscribe exactamente 10 personas que no estén en fútbol, vóley ni básquet.',
+      'Cada ciclo inscribe hasta 8 personas que no estén en fútbol, vóley ni básquet.',
       'Cada persona participa en máximo 2 juegos.',
       'Puntaje por juego: 1.° puesto 5 puntos, 2.° 3, 3.° 2 y 4.° 1.',
       'Gana el ciclo con más puntos. Desempate: más primeros puestos y, si persiste, un jalón de soga.',
@@ -121,9 +122,10 @@ export const DISCIPLINES: Discipline[] = [
     name: 'Ajedrez',
     icon: '♟️',
     format: 'individual',
-    summary: 'Torneo blitz individual y abierto a todos. Escenario, de 11:30 a. m. a 12:30 p. m. Sin inscripción previa.',
+    roster: { jersey: false, sport: false },
+    summary: 'Torneo blitz individual en el escenario, de 11:30 a. m. a 12:30 p. m. Cada ciclo inscribe a los jugadores que quiera.',
     rules: [
-      'Pueden jugar todos los asistentes. No hay inscripción previa: quien quiera competir da su nombre completo y ciclo en el escenario antes de las 11:30 a. m.',
+      'Cada ciclo inscribe a los jugadores que quiera (sin límite). Pueden inscribirse aunque ya jueguen dos deportes.',
       'Es también una actividad de activación: cualquiera puede acercarse a aprender y habrá personas guiando a quienes recién empiezan.',
       'No cuenta para el límite de 2 deportes; quien juegue otro deporte es responsable de sus cruces de horario. No da derecho al almuerzo.',
       'Ritmo: 3 minutos por jugador con 2 segundos de incremento por jugada.',
@@ -141,9 +143,9 @@ export const DISCIPLINES: Discipline[] = [
     icon: '⚽',
     format: 'partido',
     unit: 'Goles',
-    roster: { jersey: true, sport: false },
-    summary: 'Un solo partido entre dos equipos de alumnas de distintos ciclos. Cancha 2, 11:20 a. m.',
-    rules: ['Mismas reglas del fútbol.', 'No cuenta para el límite de 2 deportes.', 'No otorga trofeo.'],
+    roster: { jersey: false, sport: false },
+    summary: 'Un solo partido entre dos equipos de alumnas. Cancha 2, 11:20 a. m. Cada ciclo inscribe a las jugadoras que quiera.',
+    rules: ['Mismas reglas del fútbol.', 'No cuenta para el límite de 2 deportes: las jugadoras pueden estar también en básquet damas y en vóley.', 'No otorga trofeo.'],
   },
   {
     id: 'basquet_damas',
@@ -151,9 +153,9 @@ export const DISCIPLINES: Discipline[] = [
     icon: '🏀',
     format: 'partido',
     unit: 'Puntos',
-    roster: { jersey: true, sport: false },
-    summary: 'Un solo partido entre dos equipos de alumnas de distintos ciclos. Cancha de vóley, 12:55 p. m.',
-    rules: ['Mismas reglas del básquet.', 'No cuenta para el límite de 2 deportes.', 'No otorga trofeo.'],
+    roster: { jersey: false, sport: false },
+    summary: 'Un solo partido entre dos equipos de alumnas. Cancha de vóley, 12:55 p. m. Cada ciclo inscribe a las jugadoras que quiera.',
+    rules: ['Mismas reglas del básquet.', 'No cuenta para el límite de 2 deportes: las jugadoras pueden estar también en fútbol damas y en vóley.', 'No otorga trofeo.'],
   },
   {
     id: 'concurso',
@@ -281,7 +283,7 @@ const ACTIVITIES: Activity[] = [
   ).map(([title, start, end, note], i) => general(`g${i + 1}`, title, 'cancha4', start, end, { disciplineId: 'gincana', note, stage: `Juego ${i + 1} de 5` })),
   general('fd', 'Fútbol damas', 'cancha2', '11:20', '11:45', { disciplineId: 'futbol_damas', sides: [{ label: 'Equipo A' }, { label: 'Equipo B' }] }),
   general('bd', 'Básquet damas', 'voley', '12:55', '13:20', { disciplineId: 'basquet_damas', sides: [{ label: 'Equipo A' }, { label: 'Equipo B' }] }),
-  general('ajedrez', 'Torneo de ajedrez blitz', 'escenario', '11:30', '12:30', { disciplineId: 'ajedrez', note: 'Abierto a todos. Da tu nombre y ciclo en el escenario antes de las 11:30 a. m.' }),
+  general('ajedrez', 'Torneo de ajedrez blitz', 'escenario', '11:30', '12:30', { disciplineId: 'ajedrez', note: 'Los inscritos deben estar en el escenario antes de las 11:30 a. m.' }),
   general('dj', 'Inicio de la música con DJ Angel', 'escenario', '13:00', '17:00', { note: 'La música sigue hasta el cierre del evento.' }),
   general('concurso', 'Anuncio del ganador del concurso', 'escenario', '13:45', '14:00', { disciplineId: 'concurso' }),
   general('almuerzo', 'Almuerzo y premiación', 'escenario', '14:00', '15:00', { note: 'Almuerzo exclusivo para inscritos. Se entregan los trofeos de fútbol, vóley, básquet y gincana y se anuncia al campeón de ajedrez.' }),
@@ -327,5 +329,6 @@ export const seed = (): EventData => ({
     },
   ],
   corrections: [],
+  reports: [],
   directOverride: {},
 })
