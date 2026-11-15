@@ -330,10 +330,15 @@ export function DisciplinePage() {
         </p>
       )}
 
-      {d.id === 'concurso' && EVENT.votingUrl && (
-        <a className="btn primary vote" href={EVENT.votingUrl} target="_blank" rel="noreferrer">
-          🗳️ Ir a la votación
-        </a>
+      {d.id === 'concurso' && (
+        <div className="row">
+          <a className="btn primary vote" href={EVENT.contestFormUrl} target="_blank" rel="noreferrer">
+            📝 Postular mi proyecto
+          </a>
+          <a className="btn primary vote" href={EVENT.votingUrl} target="_blank" rel="noreferrer">
+            🗳️ Votar por un proyecto
+          </a>
+        </div>
       )}
 
       <details className="card rules">

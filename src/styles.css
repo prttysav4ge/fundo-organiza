@@ -250,3 +250,4 @@ legend { font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; }
   .fzone.sel .fpill { box-shadow: 0 0 0 2px #fff; }
   .flive { box-shadow: 0 0 0 1.5px #fff; }
 }
+.fmap-bg { user-select: none; -webkit-user-drag: none; pointer-events: none; }

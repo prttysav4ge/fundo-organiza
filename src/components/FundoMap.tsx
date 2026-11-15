@@ -1,13 +1,16 @@
+import mapSmall from '../assets/mapa-fundo-640.webp'
+import mapLarge from '../assets/mapa-fundo.webp'
 import { VENUES } from '../data/seed'
 import { useStore } from '../data/store'
 
 // Croquis interactivo del Fundo. Sigue la composición del diseño original: cada
 // zona tiene un área tocable y una etiqueta centrada. Posiciones en % del mapa
 // (proporción 1273 × 1003) para que la misma plantilla sirva con una foto aérea
-// de fondo (MAP_IMAGE) o con el dibujo vectorial de respaldo.
+// de fondo o con el dibujo vectorial de respaldo. La imagen se arma uniendo las
+// capas del diseño (fondo, escenario, piscina, vóley y básquet).
 
-/** Imagen de fondo opcional (ruta en /public). Vacío = dibujo vectorial. */
-export const MAP_IMAGE = ''
+/** Cambiar a false para volver al dibujo vectorial. */
+const USE_IMAGE = true
 
 interface Zone {
   id: string
@@ -18,14 +21,14 @@ interface Zone {
 }
 
 const ZONES: Zone[] = [
-  { id: 'escenario', label: [24, 30], area: [10, 10, 29, 41] },
-  { id: 'voley', label: [71.5, 19], area: [63, 0, 17, 38] },
-  { id: 'basquet', label: [90.5, 19], area: [82, 0, 17, 38] },
+  { id: 'escenario', label: [36, 16], area: [11.8, 7.9, 24.5, 31.5] },
+  { id: 'voley', label: [71.5, 19], area: [63, 0, 17, 38.3] },
+  { id: 'basquet', label: [90.5, 19], area: [82, 0, 17, 38.3] },
   { id: 'cancha1', label: [56.2, 55], area: [39, 39, 30.5, 30.5] },
   { id: 'cancha4', label: [82, 55], area: [69.5, 39, 30.5, 30.5] },
   { id: 'cancha2', label: [56.2, 80], area: [39, 69.5, 30.5, 30.5] },
   { id: 'cancha3', label: [82, 80], area: [69.5, 69.5, 30.5, 30.5] },
-  { id: 'piscina', label: [23.5, 68], area: [10, 48, 28, 41] },
+  { id: 'piscina', label: [23.7, 68], area: [10.2, 48.5, 27, 39.5] },
 ]
 
 interface Props {
@@ -41,7 +44,11 @@ export default function FundoMap({ selected, onSelect }: Props) {
 
   return (
     <div className="fmap" role="group" aria-label="Mapa interactivo del Fundo UPAO">
-      {MAP_IMAGE ? <img className="fmap-bg" src={MAP_IMAGE} alt="" /> : <MapDrawing />}
+      {USE_IMAGE ? (
+        <img className="fmap-bg" src={mapLarge} srcSet={`${mapSmall} 636w, ${mapLarge} 1273w`} sizes="(min-width: 900px) 60vw, 100vw" alt="" decoding="async" />
+      ) : (
+        <MapDrawing />
+      )}
       {ZONES.map((z) => {
         const v = VENUES.find((x) => x.id === z.id)!
         const isLive = live(z.id)

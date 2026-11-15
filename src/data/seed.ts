@@ -12,7 +12,9 @@ export const EVENT = {
   deadline: '2026-11-16T23:59:59-05:00',
   deadlineLabel: 'lunes 16 de noviembre, 11:59 p. m.',
   /** Enlace a la votación del concurso (hoja de cálculo o formulario). Vacío = no se muestra el botón. */
-  votingUrl: '',
+  votingUrl: 'https://forms.gle/gJBw4Riis3Zpv2jj7',
+  /** Formulario de postulación al concurso. */
+  contestFormUrl: 'https://forms.gle/ZXDfRc11tewpBeZ38',
 }
 
 const ORD = ['1.er', '2.°', '3.er', '4.°', '5.°', '6.°', '7.°', '8.°', '9.°', '10.°']
