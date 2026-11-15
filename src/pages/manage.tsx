@@ -94,9 +94,7 @@ const PBadge = ({ p }: { p: Participant }) => (
   <span className={`badge ${p.status === 'confirmado' ? 'ok' : 'warn'}`}>{p.status === 'confirmado' ? 'Confirmado' : 'Por confirmar'}</span>
 )
 const PData = ({ p }: { p: Participant }) => (
-  <span className="small muted pdata">
-    ID {p.upaoId} · DNI {p.dni} · {p.email}
-  </span>
+  <span className="small muted pdata">{p.upaoId ? `ID ${p.upaoId} · DNI ${p.dni} · ${p.email}` : 'Cargando datos…'}</span>
 )
 
 function Delegate({ groupId }: { groupId: string }) {
