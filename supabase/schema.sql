@@ -136,7 +136,7 @@ begin
     ('futbol', 'Fútbol', 10, true, true),
     ('voley', 'Vóley', 8, true, true),
     ('basquet', 'Básquet', 8, true, true),
-    ('gincana', 'Gincana', 8, false, false),
+    ('gincana', 'Gincana', 10, false, false),
     ('futbol_damas', 'Fútbol damas', null, false, false),
     ('basquet_damas', 'Básquet damas', null, false, false),
     ('ajedrez', 'Ajedrez', null, false, false)
@@ -212,6 +212,31 @@ begin
   if a.pass_hash <> crypt(p_old, a.pass_hash) then raise exception 'La contraseña actual no es correcta.'; end if;
   if length(p_new) < 8 then raise exception 'La nueva contraseña debe tener al menos 8 caracteres.'; end if;
   update accounts set pass_hash = crypt(p_new, gen_salt('bf')) where username = a.username;
+end $$;
+
+-- Cuentas para la comisión: listar y restablecer contraseñas olvidadas.
+create or replace function admin_list_accounts(p_token uuid) returns table (username text, role text, group_id text)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  perform _admin(p_token);
+  return query select a.username, a.role, a.group_id from accounts a order by a.role, a.username;
+end $$;
+
+-- Genera una contraseña temporal y cierra las sesiones abiertas de esa cuenta.
+create or replace function admin_reset_password(p_token uuid, p_user text) returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare me accounts := _admin(p_token); v_pass text; v_chars text := 'abcdefghjkmnpqrstuvwxyz23456789'; i int;
+begin
+  if p_user = me.username then raise exception 'Para tu propia cuenta usa «Cambiar mi contraseña».'; end if;
+  if not exists (select 1 from accounts where username = p_user) then raise exception 'Cuenta no encontrada.'; end if;
+  v_pass := '';
+  for i in 1..12 loop
+    v_pass := v_pass || substr(v_chars, 1 + floor(random() * length(v_chars))::int, 1);
+    if i in (4, 8) then v_pass := v_pass || '-'; end if;
+  end loop;
+  update accounts set pass_hash = crypt(v_pass, gen_salt('bf')) where username = p_user;
+  delete from sessions where username = p_user;
+  return v_pass;
 end $$;
 
 ---------------------------------------------------------------- inscripciones

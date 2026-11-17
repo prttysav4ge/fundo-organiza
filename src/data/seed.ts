@@ -107,10 +107,10 @@ export const DISCIPLINES: Discipline[] = [
     name: 'Gincana',
     icon: '🎯',
     format: 'puntos',
-    roster: { max: 8, jersey: false, sport: false },
+    roster: { max: 10, jersey: false, sport: false },
     summary: '5 juegos seguidos en la cancha 4, de 10:30 a 11:50 a. m.',
     rules: [
-      'Cada ciclo inscribe hasta 8 personas que no estén en fútbol, vóley ni básquet.',
+      'Cada ciclo inscribe hasta 10 personas que no estén en fútbol, vóley ni básquet.',
       'Cada persona participa en máximo 2 juegos.',
       'Puntaje por juego: 1.° puesto 5 puntos, 2.° 3, 3.° 2 y 4.° 1.',
       'Gana el ciclo con más puntos. Desempate: más primeros puestos y, si persiste, un jalón de soga.',

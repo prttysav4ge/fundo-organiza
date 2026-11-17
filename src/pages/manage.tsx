@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { DisputeBanner, Logo, OfflineBanner, STATUS_LABEL } from '../components/ui'
 import { DISCIPLINES, EVENT, GROUPS, VENUES } from '../data/seed'
@@ -71,6 +71,13 @@ function Login() {
       <button className="btn primary" disabled={busy}>
         {busy ? 'Ingresando…' : 'Ingresar'}
       </button>
+      <details className="forgot">
+        <summary>¿Olvidaste tu contraseña?</summary>
+        <p className="small">
+          Escríbele a la comisión organizadora con tu usuario (por ejemplo, <code>delegado6</code>). Te dará una contraseña temporal; al entrar, cámbiala en
+          «Cambiar mi contraseña», al final de tu panel.
+        </p>
+      </details>
       {!REMOTE && (
       <p className="small muted demo">
         <b>Cuentas provisionales:</b> <code>admin</code> / <code>admin2026</code> · delegados <code>delegado1</code>…<code>delegado10</code> con{' '}
@@ -421,7 +428,7 @@ function ReportItem({ a, groupId, reports }: { a: Activity; groupId: string; rep
   )
 }
 
-const TABS = ['Actividades', 'Inscripciones', 'Correcciones', 'Anuncios'] as const
+const TABS = ['Actividades', 'Inscripciones', 'Correcciones', 'Anuncios', 'Cuentas'] as const
 
 function Admin() {
   const { corrections, participants, reset } = useStore()
@@ -445,6 +452,7 @@ function Admin() {
       {tab === 'Inscripciones' && <AdminParticipants />}
       {tab === 'Correcciones' && <AdminCorrections />}
       {tab === 'Anuncios' && <AdminAnnouncements />}
+      {tab === 'Cuentas' && <AdminAccounts />}
       {!REMOTE && (
       <p className="small muted" style={{ marginTop: 32 }}>
         <button className="btn ghost danger" onClick={() => confirm('Se borrarán inscripciones, resultados y anuncios de este navegador. ¿Continuar?') && reset()}>
@@ -1010,5 +1018,65 @@ function EditorReports({ a }: { a: Activity }) {
       </ul>
       {a.dispute && <span className="small">Verifica con el árbitro y registra aquí el resultado correcto como «Finalizado».</span>}
     </div>
+  )
+}
+
+/** La comisión restablece la contraseña de un delegado que la olvidó. */
+function AdminAccounts() {
+  const { listAccounts, resetPassword } = useStore()
+  const [rows, setRows] = useState<{ username: string; role: string; group_id: string | null }[] | null>(null)
+  const [result, setResult] = useState<Record<string, { pass?: string; error?: string }>>({})
+  const [asking, setAsking] = useState<string | null>(null)
+  useEffect(() => {
+    listAccounts().then(setRows)
+  }, [])
+  if (!REMOTE) return <p className="muted">Disponible solo en la versión conectada al servidor.</p>
+  if (!rows) return <p className="muted">Cargando cuentas…</p>
+  return (
+    <>
+      <p className="muted">
+        Si un delegado olvidó su contraseña, genera una temporal y entrégasela en persona o por mensaje privado. Su sesión abierta se cierra y la contraseña anterior deja de
+        funcionar.
+      </p>
+      <div className="list">
+        {rows
+          .filter((r) => r.role === 'delegado')
+          .map((r) => (
+            <div key={r.username} className="card item">
+              <div className="item-main">
+                <span>
+                  <strong>{r.username}</strong> <span className="small muted">· {group(r.group_id)?.name}</span>
+                </span>
+                {asking === r.username ? (
+                  <span className="row">
+                    <button
+                      className="btn primary"
+                      onClick={async () => {
+                        setResult({ ...result, [r.username]: await resetPassword(r.username) })
+                        setAsking(null)
+                      }}
+                    >
+                      Sí, restablecer
+                    </button>
+                    <button className="btn ghost" onClick={() => setAsking(null)}>
+                      Cancelar
+                    </button>
+                  </span>
+                ) : (
+                  <button className="btn ghost" onClick={() => setAsking(r.username)}>
+                    Restablecer contraseña
+                  </button>
+                )}
+              </div>
+              {result[r.username]?.pass && (
+                <p className="success">
+                  Nueva contraseña temporal: <code className="pass">{result[r.username].pass}</code>
+                </p>
+              )}
+              {result[r.username]?.error && <p className="error">{result[r.username].error}</p>}
+            </div>
+          ))}
+      </div>
+    </>
   )
 }

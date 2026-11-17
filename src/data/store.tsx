@@ -64,6 +64,8 @@ interface Store extends EventData {
   login: (u: string, p: string) => Promise<boolean>
   logout: () => void
   changePassword: (oldPass: string, newPass: string) => Result
+  listAccounts: () => Promise<{ username: string; role: string; group_id: string | null }[]>
+  resetPassword: (user: string) => Promise<{ pass?: string; error?: string }>
   plays: (a: Activity, groupId: string) => boolean
   isGeneral: (a: Activity) => boolean
   title: (a: Activity) => string
@@ -363,6 +365,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     logout: () => {
       if (sb && session?.token) sb.rpc('logout', { p_token: session.token }).then(() => undefined)
       setSession(null)
+    },
+    listAccounts: async () => {
+      if (!sb) return []
+      const { data: r } = await sb.rpc('admin_list_accounts', { p_token: session?.token })
+      return r ?? []
+    },
+    resetPassword: async (user) => {
+      if (!sb) return { error: 'No disponible en la versión de demostración.' }
+      const { data: r, error } = await sb.rpc('admin_reset_password', { p_token: session?.token, p_user: user })
+      return error ? { error: errMsg(error)! } : { pass: r as string }
     },
     changePassword: async (o, n) => {
       if (!sb) return 'En la versión de demostración no se pueden cambiar contraseñas.'
