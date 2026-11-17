@@ -34,8 +34,8 @@ La conexión está en `src/config.ts` (solo la clave pública *anon*).
 - **Delegados de ciclo:** inscriben con N.° de polo (fútbol, vóley, básquet), nombre «Apellidos, Nombres»,
   ID UPAO (6 o 9 dígitos), DNI y correo institucional, a mano o subiendo el Excel del ciclo
   (formato entregado a los delegados; se revisa fila por fila antes de inscribir). Cupos por equipo: fútbol 10 (1.er ciclo: equipos
-  A y B), vóley 8, básquet 8, gincana 8; fútbol damas, básquet damas y ajedrez sin límite. Máximo 2 de
-  fútbol/vóley/básquet; la gincana solo para quien no está en esos tres. Lo enviado no se edita: se
+  A y B), vóley 8, básquet 8, gincana 10; fútbol damas, básquet damas y ajedrez sin límite. Máximo 2 de
+  fútbol/vóley/básquet (la gincana sí se puede sumar). El N.° de polo puede repetirse. Lo enviado no se edita: se
   solicita corrección.
 - **Resultados con doble confirmación:** los delegados de los dos ciclos registran el marcador. Si
   coinciden, el partido se cierra y el ganador avanza solo; si no, queda en disputa, se avisa a todos y

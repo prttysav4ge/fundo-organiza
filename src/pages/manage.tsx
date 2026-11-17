@@ -216,9 +216,7 @@ function DelegateRoster({ groupId }: { groupId: string }) {
             {rule.max ? `Máximo ${rule.max} por equipo.` : 'Sin límite de inscritos.'}{' '}
             {rule.sport
               ? 'Cuenta para el límite de 2 deportes (fútbol, vóley o básquet).'
-              : did === 'gincana'
-                ? 'Solo para quienes no están en fútbol, vóley ni básquet.'
-                : 'No cuenta para el límite de 2 deportes.'}
+              : 'No cuenta para el límite de 2 deportes.'}
           </p>
           <div className="row">
             {rule.jersey && (

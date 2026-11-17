@@ -28,9 +28,10 @@ create table if not exists participants (
   email text,
   created_by text,
   created_at timestamptz not null default now(),
-  unique (upao_id, discipline_id),
-  unique (discipline_id, team_id, jersey)
+  unique (upao_id, discipline_id)
 );
+-- Las bases permiten que dos jugadores del mismo equipo usen el mismo número.
+alter table participants drop constraint if exists participants_discipline_id_team_id_jersey_key;
 
 alter table participants add column if not exists dni text;
 alter table participants add column if not exists email text;
@@ -168,11 +169,7 @@ begin
    where upao_id = p_upao and discipline_id in ('futbol', 'voley', 'basquet') and id is distinct from p_ignore;
   if d.sport then
     if v_sports >= 2 then return 'Máximo 2 deportes por jugador (fútbol, vóley o básquet).'; end if;
-    if exists (select 1 from participants where upao_id = p_upao and discipline_id = 'gincana' and id is distinct from p_ignore) then
-      return 'Quien está en la gincana no puede inscribirse en fútbol, vóley ni básquet.'; end if;
   end if;
-  if p_disc = 'gincana' and v_sports > 0 then
-    return 'Quien está inscrito en fútbol, vóley o básquet no puede inscribirse en la gincana.'; end if;
 
   if d.mx is not null then
     select count(*) into v_n from participants where discipline_id = p_disc and team_id = p_team and id is distinct from p_ignore;
@@ -180,8 +177,6 @@ begin
   end if;
   if d.jer then
     if p_jersey is null or p_jersey < 1 or p_jersey > 99 then return 'Indica un número de polo entre 1 y 99.'; end if;
-    if exists (select 1 from participants where discipline_id = p_disc and team_id = p_team and jersey = p_jersey and id is distinct from p_ignore) then
-      return 'El número ' || p_jersey || ' ya está asignado en este equipo de ' || d.name || '.'; end if;
   end if;
   return null;
 end $$;

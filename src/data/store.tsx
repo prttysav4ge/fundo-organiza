@@ -134,14 +134,11 @@ export function validateParticipant(all: Participant[], p: NewParticipant, ignor
   const sports = same.filter((x) => discipline(x.disciplineId)?.roster?.sport)
   if (rule.sport) {
     if (sports.length >= 2) return 'Máximo 2 deportes por jugador (fútbol, vóley o básquet).'
-    if (same.some((x) => x.disciplineId === 'gincana')) return 'Quien está en la gincana no puede inscribirse en fútbol, vóley ni básquet.'
   }
-  if (p.disciplineId === 'gincana' && sports.length) return 'Quien está inscrito en fútbol, vóley o básquet no puede inscribirse en la gincana.'
   const team = others.filter((x) => x.disciplineId === p.disciplineId && x.teamId === p.teamId)
   if (rule.max && team.length >= rule.max) return `El equipo ya tiene el máximo de ${rule.max} inscritos en ${d.name}.`
   if (rule.jersey) {
     if (!p.jersey || p.jersey < 1 || p.jersey > 99 || !Number.isInteger(p.jersey)) return 'Indica un número de polo entre 1 y 99.'
-    if (team.some((x) => x.jersey === p.jersey)) return `El número ${p.jersey} ya está asignado en este equipo de ${d.name}.`
   }
   return null
 }
