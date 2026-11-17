@@ -1,5 +1,10 @@
-import poloC10 from '../assets/polo-c10.webp'
+import poloC1 from '../assets/polo-c1.webp'
+import poloC2 from '../assets/polo-c2.webp'
 import poloC6 from '../assets/polo-c6.webp'
+import poloC7 from '../assets/polo-c7.webp'
+import poloC8 from '../assets/polo-c8.webp'
+import poloC9 from '../assets/polo-c9.webp'
+import poloC10 from '../assets/polo-c10.webp'
 import { Link } from 'react-router-dom'
 import { REMOTE, discipline, fmtDate, fmtTime, group, teamGroup, useStore, venue } from '../data/store'
 import type { Activity, Announcement, Group, Status } from '../data/types'
@@ -103,7 +108,7 @@ export function ActivityCard({ a }: { a: Activity }) {
 const GENERAL_ICON: Record<string, string> = { bus1: '🚌', bus2: '🚌', desfile: '🎉', dj: '🎵', almuerzo: '🍽️', baileton: '💃' }
 
 /** Fotos de los polos que ya existen. Para agregar otro: src/assets/polo-<id>.webp y añadirlo aquí. */
-const POLO_PHOTOS: Record<string, string> = { c6: poloC6, c10: poloC10 }
+const POLO_PHOTOS: Record<string, string> = { c1: poloC1, c2: poloC2, c6: poloC6, c7: poloC7, c8: poloC8, c9: poloC9, c10: poloC10 }
 
 export function Jersey({ g, size = 150 }: { g: Group; size?: number }) {
   const photo = POLO_PHOTOS[g.id]
