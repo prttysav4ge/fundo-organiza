@@ -294,3 +294,13 @@ a.act-panel:focus-visible { outline-offset: -3px; }
 .forgot summary { cursor: pointer; color: var(--orange-dark); font-size: 0.9rem; }
 .forgot p { margin-top: 6px; }
 code.pass { font-size: 1.1rem; user-select: all; }
+.excel { border: 2px solid var(--blue); }
+.excel-note { background: #fff6ec; border-left: 4px solid var(--orange); padding: 8px 10px; border-radius: 8px; font-size: 0.92rem; }
+.file input { width: 100%; }
+.tbl-wrap { overflow-x: auto; max-height: 420px; overflow-y: auto; border-radius: 10px; }
+.small-tbl { font-size: 0.82rem; margin: 0; }
+.small-tbl td, .small-tbl th { padding: 6px 8px; }
+.st-row.error td { background: #fff5f6; }
+.st-row.skip td { color: var(--muted); }
+.manual { margin-top: 12px; }
+.manual summary { cursor: pointer; font-weight: 700; }

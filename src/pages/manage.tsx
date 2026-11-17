@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { DisputeBanner, Logo, OfflineBanner, STATUS_LABEL } from '../components/ui'
 import { DISCIPLINES, EVENT, GROUPS, VENUES } from '../data/seed'
-import { REMOTE, byStart, discipline, fmtDate, fmtTime, group, teamName, teamsFor, useStore } from '../data/store'
+import { readRegistrationExcel, type ImportResult } from '../data/importExcel'
+import { REMOTE, byStart, discipline, validateParticipant, fmtDate, fmtTime, group, teamName, teamsFor, useStore } from '../data/store'
 import type { Activity, Announcement, Correction, Participant, ScoreReport, Status } from '../data/types'
 
 const ROSTERED = DISCIPLINES.filter((d) => d.roster)
@@ -187,6 +188,9 @@ function DelegateRoster({ groupId }: { groupId: string }) {
           </>
         )}
       </p>
+      {open && <ExcelUpload groupId={groupId} />}
+
+      <h2>Inscritos por deporte</h2>
       <div className="chips">
         {ROSTERED.map((x) => {
           const n = mine.filter((p) => p.disciplineId === x.id).length
@@ -204,7 +208,9 @@ function DelegateRoster({ groupId }: { groupId: string }) {
       </div>
 
       {open && (
-        <form className="card form" onSubmit={submit}>
+        <details className="card manual">
+          <summary>O inscribir a una persona a mano en {d.name}</summary>
+        <form className="form" onSubmit={submit}>
           <h2>Inscribir en {d.name}</h2>
           <p className="small muted">
             {rule.max ? `Máximo ${rule.max} por equipo.` : 'Sin límite de inscritos.'}{' '}
@@ -257,6 +263,7 @@ function DelegateRoster({ groupId }: { groupId: string }) {
             {busy ? 'Enviando…' : 'Enviar inscripción'}
           </button>
         </form>
+        </details>
       )}
 
       <h2>
@@ -1078,5 +1085,145 @@ function AdminAccounts() {
           ))}
       </div>
     </>
+  )
+}
+
+/** Subir el Excel de inscripción del ciclo (formato entregado a los delegados). */
+function ExcelUpload({ groupId }: { groupId: string }) {
+  const { participants, addParticipants } = useStore()
+  const g = group(groupId)!
+  const [res, setRes] = useState<ImportResult | null>(null)
+  const [fileName, setFileName] = useState('')
+  const [readErr, setReadErr] = useState('')
+  const [progress, setProgress] = useState<number | null>(null)
+  const [sent, setSent] = useState<(string | null)[] | null>(null)
+  const [inputKey, setInputKey] = useState(0)
+
+  const onFile = async (file: File | undefined) => {
+    setRes(null)
+    setSent(null)
+    setReadErr('')
+    if (!file) return
+    setFileName(file.name)
+    try {
+      setRes(await readRegistrationExcel(file, groupId))
+    } catch {
+      setReadErr('No pude leer el archivo. Súbelo en formato Excel (.xlsx).')
+    }
+  }
+
+  // Revisión previa: reglas de las bases aplicadas fila por fila, acumulando las anteriores.
+  const wrongCycle = !!res?.groupId && res.groupId !== groupId
+  const checked = (() => {
+    if (!res) return []
+    const acc = [...participants]
+    return res.rows.map((r) => {
+      if (r.error) return { r, status: 'error' as const, msg: r.error }
+      const dup = participants.find((x) => x.groupId === groupId && x.disciplineId === r.data.disciplineId && x.upaoId === r.data.upaoId)
+      if (dup) return { r, status: 'skip' as const, msg: 'Ya estaba inscrito.' }
+      const err = validateParticipant(acc, { ...r.data, email: r.data.email.toLowerCase() })
+      if (err) return { r, status: 'error' as const, msg: err }
+      acc.push({ ...r.data, id: `tmp${r.sheetRow}`, status: 'pendiente' })
+      return { r, status: 'ok' as const, msg: 'Listo para inscribir' }
+    })
+  })()
+  const ready = checked.filter((x) => x.status === 'ok')
+
+  const send = async () => {
+    setProgress(0)
+    const out = await addParticipants(
+      ready.map((x) => x.r.data),
+      (n) => setProgress(n),
+    )
+    setProgress(null)
+    setSent(out)
+  }
+
+  return (
+    <div className="card form excel">
+      <h2>📄 Subir Excel de inscripción</h2>
+      <p className="excel-note">
+        Sube el Excel <b>SOLO DE TU CICLO ({g.name})</b>, en el formato que se les dio: una sección por deporte (Fútbol, Básquet, Vóley, Gincana…) con las columnas N° de polo,
+        Nombre completo (Apellidos, Nombres), ID, DNI y Correo institucional.
+      </p>
+      <label className="file">
+        <input key={inputKey} id="excel-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(e) => onFile(e.target.files?.[0])} />
+      </label>
+      {readErr && <p className="error">{readErr}</p>}
+
+      {res && (
+        <>
+          <p className="small muted">
+            {fileName} · {res.rows.length} filas leídas{res.groupText ? ` · dice «${res.groupText}»` : ''}
+          </p>
+          {wrongCycle ? (
+            <p className="error">
+              Este Excel es del {group(res.groupId)?.name}. Solo puedes subir el Excel de tu ciclo ({g.name}).
+            </p>
+          ) : (
+            <>
+              {res.warnings.map((w) => (
+                <p key={w} className="small hint">
+                  ⚠️ {w}
+                </p>
+              ))}
+              {!sent && (
+                <>
+                  <div className="tbl-wrap">
+                    <table className="tbl small-tbl">
+                      <thead>
+                        <tr>
+                          <th>Fila</th>
+                          <th>Deporte</th>
+                          <th>N.°</th>
+                          <th>Nombre</th>
+                          <th>Revisión</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {checked.map(({ r, status, msg }) => (
+                          <tr key={r.sheetRow} className={`st-row ${status}`}>
+                            <td>{r.sheetRow}</td>
+                            <td>
+                              {discipline(r.data.disciplineId)?.name}
+                              {r.data.teamId !== groupId ? ` ${teamLabel(r.data.teamId)}` : ''}
+                            </td>
+                            <td>{discipline(r.data.disciplineId)?.roster?.jersey ? r.data.jersey ?? '—' : ''}</td>
+                            <td>{r.data.name || '—'}</td>
+                            <td>{status === 'ok' ? '✅ ' : status === 'skip' ? '↩️ ' : '❌ '}{msg}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="small">
+                    <b>{ready.length}</b> listos · {checked.filter((x) => x.status === 'error').length} con errores · {checked.filter((x) => x.status === 'skip').length} ya inscritos.
+                    {checked.some((x) => x.status === 'error') && ' Corrige las filas con ❌ en tu Excel y vuelve a subirlo: las que ya se inscribieron se saltan solas.'}
+                  </p>
+                  <button className="btn primary" disabled={!ready.length || progress != null} onClick={send}>
+                    {progress != null ? `Inscribiendo… ${progress}/${ready.length}` : `Inscribir ${ready.length} jugador${ready.length === 1 ? '' : 'es'}`}
+                  </button>
+                </>
+              )}
+              {sent && (
+                <div>
+                  <p className="success">
+                    Se inscribieron {sent.filter((x) => !x).length} de {sent.length}. Quedan pendientes de confirmación por la comisión.
+                  </p>
+                  {sent.some(Boolean) && (
+                    <ul className="small">
+                      {sent.map((e, i) => e && <li key={i} className="error">Fila {ready[i].r.sheetRow} ({ready[i].r.data.name}): {e}</li>)}
+                    </ul>
+                  )}
+                  <button className="btn ghost" onClick={() => (setRes(null), setSent(null), setInputKey((k) => k + 1))}>
+                    Subir otro Excel
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </div>
   )
 }

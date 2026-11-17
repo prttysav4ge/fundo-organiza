@@ -8,9 +8,9 @@ export const EVENT = {
   hours: '8:00 a. m. – 5:00 p. m.',
   place: 'Fundo UPAO',
   day: '2026-11-21',
-  /** Cierre de inscripciones en la plataforma: lunes 16 de noviembre, 11:59 p. m. (hora de Perú). */
-  deadline: '2026-11-16T23:59:59-05:00',
-  deadlineLabel: 'lunes 16 de noviembre, 11:59 p. m.',
+  /** Cierre de inscripciones en la plataforma: miércoles 18 de noviembre, 11:59 p. m. (hora de Perú). */
+  deadline: '2026-11-18T23:59:59-05:00',
+  deadlineLabel: 'miércoles 18 de noviembre, 11:59 p. m.',
   /** Enlace a la votación del concurso (hoja de cálculo o formulario). Vacío = no se muestra el botón. */
   votingUrl: 'https://forms.gle/gJBw4Riis3Zpv2jj7',
   /** Formulario de postulación al concurso. */
@@ -297,8 +297,8 @@ export const seed = (): EventData => ({
   announcements: [
     {
       id: 'n1',
-      title: 'Inscripciones hasta el lunes 16',
-      body: 'El delegado de cada ciclo inscribe a sus participantes hasta el lunes 16 de noviembre a las 11:59 p. m. No se aceptan inscripciones ni cambios fuera de plazo.',
+      title: 'Inscripciones hasta el miércoles 18',
+      body: 'El delegado de cada ciclo inscribe a sus participantes hasta el miércoles 18 de noviembre a las 11:59 p. m. No se aceptan inscripciones ni cambios fuera de plazo.',
       date: '2026-11-13',
       groupIds: [],
       kind: 'urgente',

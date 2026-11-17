@@ -70,6 +70,8 @@ interface Store extends EventData {
   isGeneral: (a: Activity) => boolean
   title: (a: Activity) => string
   addParticipant: (p: NewParticipant) => Result
+  /** Inscribe varios a la vez (Excel). Devuelve el error de cada uno (null = inscrito). */
+  addParticipants: (list: NewParticipant[], onProgress?: (done: number) => void) => Promise<(string | null)[]>
   confirmParticipants: (ids: string[]) => Result
   removeParticipant: (id: string) => Result
   requestCorrection: (participantId: string, message: string) => Result
@@ -108,7 +110,8 @@ const save = (k: string, v: unknown) => {
 const uid = () => Math.random().toString(36).slice(2, 10)
 const clean = (s: string) => s.trim().replace(/\s+/g, ' ')
 
-export const NAME_RE = /^[^,]+,\s*[^,]+$/
+/** Al menos nombre y apellido; el formato pedido es «Apellidos, Nombres». */
+export const NAME_RE = /^\S+(\s*,\s*|\s+)\S+/
 export const normEmail = (e: string) => e.trim().toLowerCase()
 
 /** Reglas de inscripción. En modo Supabase el servidor las vuelve a aplicar. */
@@ -117,7 +120,7 @@ export function validateParticipant(all: Participant[], p: NewParticipant, ignor
   const rule = d?.roster
   if (!d || !rule) return 'Disciplina no válida.'
   const others = all.filter((x) => x.id !== ignoreId)
-  if (!NAME_RE.test(clean(p.name))) return 'Escribe el nombre como «Apellidos, Nombres» (por ejemplo: Rojas Cruz, Ana María).'
+  if (!NAME_RE.test(clean(p.name))) return 'Escribe el nombre completo: Apellidos, Nombres (por ejemplo: Rojas Cruz, Ana María).'
   if (!/^(\d{6}|\d{9})$/.test(p.upaoId)) return 'El ID UPAO debe tener 6 o 9 dígitos.'
   if (!/^\d{8}$/.test(p.dni)) return 'El DNI debe tener 8 dígitos.'
   if (!/^[a-z0-9._%+-]+@upao\.edu\.pe$/.test(normEmail(p.email))) return 'Usa el correo institucional (termina en @upao.edu.pe).'
@@ -393,6 +396,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (err) return err
       if (REMOTE) return rpc('add_participant', { p })
       return local((d) => ({ ...d, participants: [...d.participants, { ...p, id: uid(), status: 'pendiente' }] }))
+    },
+    addParticipants: async (list, onProgress) => {
+      if (session?.role !== 'admin' && !open) return list.map(() => `El plazo de inscripción venció (${EVENT.deadlineLabel}).`)
+      const results: (string | null)[] = []
+      const added: Participant[] = []
+      for (const raw of list) {
+        const p = { ...raw, name: clean(raw.name), upaoId: raw.upaoId.trim(), dni: raw.dni.trim(), email: normEmail(raw.email) }
+        let err = validateParticipant([...data.participants, ...added], p)
+        if (!err && sb) {
+          const { error } = await sb.rpc('add_participant', { p_token: session?.token, p })
+          err = errMsg(error)
+        }
+        if (!err) added.push({ ...p, id: uid(), status: 'pendiente' })
+        results.push(err)
+        onProgress?.(results.length)
+      }
+      if (REMOTE) await refresh()
+      else setData((d) => ({ ...d, participants: [...d.participants, ...added] }))
+      return results
     },
     confirmParticipants: (ids) =>
       REMOTE

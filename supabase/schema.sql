@@ -147,8 +147,8 @@ begin
     if p_team not in ('c1.1', 'c1.2') then return 'Elige el equipo A (1.1) o B (1.2).'; end if;
   elsif p_team <> p_group then return 'Equipo no válido.'; end if;
 
-  if trim(coalesce(p_name, '')) !~ '^[^,]+,\s*[^,]+$' then
-    return 'Escribe el nombre como «Apellidos, Nombres» (por ejemplo: Rojas Cruz, Ana María).'; end if;
+  if trim(coalesce(p_name, '')) !~ '^\S+(\s*,\s*|\s+)\S+' then
+    return 'Escribe el nombre completo: Apellidos, Nombres (por ejemplo: Rojas Cruz, Ana María).'; end if;
   if coalesce(p_upao, '') !~ '^([0-9]{6}|[0-9]{9})$' then return 'El ID UPAO debe tener 6 o 9 dígitos.'; end if;
   if coalesce(p_dni, '') !~ '^[0-9]{8}$' then return 'El DNI debe tener 8 dígitos.'; end if;
   if lower(coalesce(p_email, '')) !~ '^[a-z0-9._%+-]+@upao\.edu\.pe$' then

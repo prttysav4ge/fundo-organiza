@@ -32,7 +32,8 @@ La conexión está en `src/config.ts` (solo la clave pública *anon*).
   W.O., penales, pase directo a la final según las bases); gincana con tabla de puntos (5/3/2/1);
   fútbol y básquet damas; ajedrez blitz abierto (campeón individual); concurso tecnológico (información).
 - **Delegados de ciclo:** inscriben con N.° de polo (fútbol, vóley, básquet), nombre «Apellidos, Nombres»,
-  ID UPAO (6 o 9 dígitos), DNI y correo institucional. Cupos por equipo: fútbol 10 (1.er ciclo: equipos
+  ID UPAO (6 o 9 dígitos), DNI y correo institucional, a mano o subiendo el Excel del ciclo
+  (formato entregado a los delegados; se revisa fila por fila antes de inscribir). Cupos por equipo: fútbol 10 (1.er ciclo: equipos
   A y B), vóley 8, básquet 8, gincana 8; fútbol damas, básquet damas y ajedrez sin límite. Máximo 2 de
   fútbol/vóley/básquet; la gincana solo para quien no está en esos tres. Lo enviado no se edita: se
   solicita corrección.
