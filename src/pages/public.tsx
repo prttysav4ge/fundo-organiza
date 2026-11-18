@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink, Navigate, Outlet, useNavigate, useParams } from 'react-router-dom'
+import ContestProjects from '../components/ContestProjects'
 import FundoMap from '../components/FundoMap'
 import { ActivityCard, AnnouncementCard, DisputeBanner, Jersey, Logo, OfflineBanner, STATUS_LABEL } from '../components/ui'
 import { GINCANA_POINTS } from '../data/bracket'
@@ -342,6 +343,7 @@ export function DisciplinePage() {
           </a>
         </div>
       )}
+      {d.id === 'concurso' && <ContestProjects />}
 
       <details className="card rules">
         <summary>Reglas principales</summary>
