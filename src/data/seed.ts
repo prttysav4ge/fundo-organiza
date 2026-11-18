@@ -10,6 +10,9 @@ export const EVENT = {
   day: '2026-11-21',
   /** Cierre de inscripciones en la plataforma: jueves 19 de noviembre, 4:00 p. m. (hora de Perú). */
   deadline: '2026-11-19T16:00:00-05:00',
+  /** Concurso tecnológico: formulario de postulación y bases en PDF. */
+  contestFormUrl: 'https://forms.gle/nciCAkMdrx5XuE4n9',
+  contestRulesUrl: 'https://drive.google.com/file/d/1I4lGUvqXBHAM-Ow124MSimqJ17CVxTzy/view?usp=sharing',
   deadlineLabel: 'jueves 19 de noviembre, 4:00 p. m.',
 }
 
@@ -111,6 +114,25 @@ export const DISCIPLINES: Discipline[] = [
       'Puntaje por juego: 1.° puesto 5 puntos, 2.° 3, 3.° 2 y 4.° 1.',
       'Gana el ciclo con más puntos. Desempate: más primeros puestos y, si persiste, un jalón de soga.',
       'La tabla final también desempata el pase directo a la final en fútbol, vóley y básquet.',
+    ],
+  },
+  {
+    id: 'concurso',
+    name: 'Concurso tecnológico',
+    icon: '💡',
+    format: 'info',
+    summary: 'Premio a la Excelencia en Creación Tecnológica Estudiantil (1.ª edición). Postulación hasta el jueves 19, 10:00 p. m. Ganador: sábado 21, 1:45 p. m., en el escenario.',
+    rules: [
+      'Pueden postular estudiantes vigentes y exalumnos de la carrera, solos o en equipo, sin límite de integrantes; cada uno debe haber aportado de verdad al proyecto. Una persona puede estar en más de un proyecto.',
+      'Los equipos pueden tener integrantes externos a la UPAO: se inscriben con un nombre de grupo y al menos un estudiante o exalumno como representante.',
+      'Cada exalumno adjunta una prueba de estudios (constancia de egresado, diploma, certificado o captura del campus virtual).',
+      'El proyecto debe ser software accesible desde un enlace (web, app, bot o app móvil), gratuito, de uso libre (no hecho para una empresa), propio y original. No participan proyectos de hardware o IoT. Se puede usar IA para construirlo.',
+      'Debe funcionar y seguir en línea desde la postulación hasta el sábado 21. Si no funciona cuando el jurado lo prueba, queda descalificado.',
+      'Postulación: del viernes 13 al jueves 19 de noviembre, 10:00 p. m. Evaluación del jurado: viernes 20.',
+      'Jurado: dos representantes del DNT Hub Digital UPAO y un docente de la carrera. No revisa el código; sus decisiones son inapelables.',
+      'Criterios (nota de 1 a 5): potencial e impacto 35 %, concepto y problema 30 %, originalidad 20 %, experiencia de uso y diseño 15 %. Desempate: mayor nota en potencial e impacto.',
+      'El jurado define los 3 primeros puestos y se les avisa antes del evento. Al menos un integrante de cada uno debe estar en el escenario a la 1:45 p. m.; si nadie del ganador está presente, el premio pasa al siguiente.',
+      'Premio: diploma. Los proyectos siguen siendo de sus autores.',
     ],
   },
   {
@@ -264,6 +286,7 @@ const ACTIVITIES: Activity[] = [
   general('bd', 'Básquet damas', 'voley', '12:55', '13:20', { disciplineId: 'basquet_damas', sides: [{ label: 'Equipo A' }, { label: 'Equipo B' }] }),
   general('ajedrez', 'Torneo de ajedrez blitz', 'escenario', '11:30', '12:30', { disciplineId: 'ajedrez', note: 'Los inscritos deben estar en el escenario antes de las 11:30 a. m.' }),
   general('dj', 'Inicio de la música con DJ Angel', 'escenario', '13:00', '17:00', { note: 'La música sigue hasta el cierre del evento.' }),
+  general('concurso', 'Anuncio del ganador del concurso tecnológico', 'escenario', '13:45', '14:00', { disciplineId: 'concurso' }),
   general('almuerzo', 'Almuerzo y premiación', 'escenario', '14:00', '15:00', { note: 'Almuerzo exclusivo para inscritos. Se entregan los trofeos de fútbol, vóley, básquet y gincana y se anuncia al campeón de ajedrez.' }),
   general('baileton', 'Bailetón', 'escenario', '14:30', '17:00'),
   general('bus2', 'Retorno en bus', 'fundo', '17:00', '17:30'),

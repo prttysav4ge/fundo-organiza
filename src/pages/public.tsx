@@ -332,6 +332,17 @@ export function DisciplinePage() {
       )}
 
 
+      {d.id === 'concurso' && (
+        <div className="row">
+          <a className="btn primary vote" href={EVENT.contestFormUrl} target="_blank" rel="noreferrer">
+            📝 Postular mi proyecto
+          </a>
+          <a className="btn ghost vote" href={EVENT.contestRulesUrl} target="_blank" rel="noreferrer">
+            📄 Ver bases completas (PDF)
+          </a>
+        </div>
+      )}
+
       <details className="card rules">
         <summary>Reglas principales</summary>
         <ul>
