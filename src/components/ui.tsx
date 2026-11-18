@@ -4,6 +4,7 @@ import poloC6 from '../assets/polo-c6.webp'
 import poloC7 from '../assets/polo-c7.webp'
 import poloC8 from '../assets/polo-c8.webp'
 import poloC9 from '../assets/polo-c9.webp'
+import poloC3 from '../assets/polo-c3.webp'
 import poloC4 from '../assets/polo-c4.webp'
 import poloC5 from '../assets/polo-c5.webp'
 import poloCe from '../assets/polo-ce.webp'
@@ -111,7 +112,7 @@ export function ActivityCard({ a }: { a: Activity }) {
 const GENERAL_ICON: Record<string, string> = { bus1: '🚌', bus2: '🚌', desfile: '🎉', dj: '🎵', almuerzo: '🍽️', baileton: '💃' }
 
 /** Fotos de los polos que ya existen. Para agregar otro: src/assets/polo-<id>.webp y añadirlo aquí. */
-const POLO_PHOTOS: Record<string, string> = { c1: poloC1, c2: poloC2, c6: poloC6, c7: poloC7, c8: poloC8, c9: poloC9, c10: poloC10, c4: poloC4, c5: poloC5, ce: poloCe }
+const POLO_PHOTOS: Record<string, string> = { c1: poloC1, c2: poloC2, c6: poloC6, c7: poloC7, c8: poloC8, c9: poloC9, c10: poloC10, c3: poloC3, c4: poloC4, c5: poloC5, ce: poloCe }
 
 export function Jersey({ g, size = 150 }: { g: Group; size?: number }) {
   const photo = POLO_PHOTOS[g.id]
