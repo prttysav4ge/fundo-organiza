@@ -5,7 +5,7 @@ import { ActivityCard, AnnouncementCard, DisputeBanner, Jersey, Logo, OfflineBan
 import { GINCANA_POINTS } from '../data/bracket'
 import { DISCIPLINES, EVENT, GROUPS } from '../data/seed'
 import { byStart, daysToEvent, discipline, group, teamGroup, teamName, teamsFor, useStore, venue } from '../data/store'
-import type { Status } from '../data/types'
+import type { Participant, Status } from '../data/types'
 
 const NAV = [
   ['/inicio', '🏠', 'Inicio'],
@@ -263,7 +263,7 @@ export function Schedule() {
 }
 
 export function Disciplines() {
-  const { activities } = useStore()
+  const { activities, participants } = useStore()
   return (
     <div className="page">
       <h1>Competencias</h1>
@@ -275,6 +275,7 @@ export function Disciplines() {
               <span className="disc-icon">{d.icon}</span>
               <strong>{d.name}</strong>
               <span className="muted small">{d.summary}</span>
+              {d.roster && <span className="small disc-count">👥 {participants.filter((p) => p.disciplineId === d.id).length} inscritos</span>}
               {live > 0 && (
                 <span className="badge st-en_curso">
                   <i className="dot" />
@@ -296,8 +297,7 @@ export function DisciplinePage() {
   const d = discipline(id)
   if (!d) return <Navigate to="/competencias" replace />
   const acts = activities.filter((a) => a.disciplineId === d.id).sort(byStart)
-  const roster = participants.filter((p) => p.disciplineId === d.id && p.groupId === gid).sort((a, b) => a.teamId.localeCompare(b.teamId) || (a.jersey ?? 0) - (b.jersey ?? 0))
-  const multi = teamsFor(d.id, gid).length > 1
+  const all = participants.filter((p) => p.disciplineId === d.id).sort((a, b) => a.teamId.localeCompare(b.teamId) || (a.jersey ?? 0) - (b.jersey ?? 0))
   const final = acts.find((a) => a.stage === 'Final')
   const champion = final?.status === 'finalizado' ? bracket.winner[final.id] : null
   const direct = bracket.direct[d.id]
@@ -394,39 +394,38 @@ export function DisciplinePage() {
 
       {d.roster && (
         <>
-          <h2>Inscritos</h2>
+          <h2>
+            Inscritos en {d.name}: {all.length}
+          </h2>
           <select value={gid} onChange={(e) => setGid(e.target.value)} aria-label="Ciclo">
+            <option value="todos">Todos los ciclos ({all.length})</option>
             {GROUPS.map((g) => (
               <option key={g.id} value={g.id}>
-                {g.name}
+                {g.name} ({all.filter((p) => p.groupId === g.id).length})
               </option>
             ))}
           </select>
-          <table className="tbl">
-            <thead>
-              <tr>
-                {d.roster.jersey && <th>N.°</th>}
-                <th>Nombres y apellidos</th>
-                {multi && <th>Equipo</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {roster.map((p) => (
-                <tr key={p.id}>
-                  {d.roster!.jersey && <td className="num">{p.jersey}</td>}
-                  <td>{p.name}</td>
-                  {multi && <td>{p.teamId.slice(1)}</td>}
-                </tr>
-              ))}
-              {!roster.length && (
-                <tr>
-                  <td colSpan={4} className="muted">
-                    Sin inscritos todavía.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          {gid === 'todos' ? (
+            GROUPS.map((g) => {
+              const list = all.filter((p) => p.groupId === g.id)
+              return (
+                <section key={g.id} className="roster-group">
+                  <h3>
+                    <i className="swatch" style={{ background: g.color }} />
+                    {g.name} <span className="muted">· {list.length} inscrito{list.length === 1 ? '' : 's'}</span>
+                  </h3>
+                  <RosterTable list={list} jersey={!!d.roster.jersey} multi={teamsFor(d.id, g.id).length > 1} />
+                </section>
+              )
+            })
+          ) : (
+            <>
+              <p className="small muted">
+                {all.filter((p) => p.groupId === gid).length} inscritos de {group(gid)?.name}
+              </p>
+              <RosterTable list={all.filter((p) => p.groupId === gid)} jersey={!!d.roster.jersey} multi={teamsFor(d.id, gid).length > 1} />
+            </>
+          )}
           <p className="small muted">¿Ves un error en tu nombre o número? Avísale a tu delegado antes del cierre de inscripciones ({EVENT.deadlineLabel}).</p>
         </>
       )}
@@ -454,5 +453,37 @@ export function Announcements() {
       ))}
       {!list.length && <p className="muted">No hay anuncios.</p>}
     </div>
+  )
+}
+
+function RosterTable({ list, jersey, multi }: { list: Participant[]; jersey: boolean; multi: boolean }) {
+  return (
+    <table className="tbl">
+      <thead>
+        <tr>
+          <th>#</th>
+          {jersey && <th>N.° polo</th>}
+          <th>Nombres y apellidos</th>
+          {multi && <th>Equipo</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {list.map((p, i) => (
+          <tr key={p.id}>
+            <td className="muted">{i + 1}</td>
+            {jersey && <td className="num">{p.jersey}</td>}
+            <td>{p.name}</td>
+            {multi && <td>{p.teamId.endsWith('.1') ? 'A' : 'B'}</td>}
+          </tr>
+        ))}
+        {!list.length && (
+          <tr>
+            <td colSpan={4} className="muted">
+              Sin inscritos todavía.
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
   )
 }
