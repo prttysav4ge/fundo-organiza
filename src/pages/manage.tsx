@@ -98,9 +98,6 @@ const PName = ({ p }: { p: Participant }) => (
     {p.teamId !== p.groupId && <span className="small muted"> · {teamLabel(p.teamId)}</span>}
   </strong>
 )
-const PBadge = ({ p }: { p: Participant }) => (
-  <span className={`badge ${p.status === 'confirmado' ? 'ok' : 'warn'}`}>{p.status === 'confirmado' ? 'Confirmado' : 'Por confirmar'}</span>
-)
 const PData = ({ p }: { p: Participant }) => (
   <span className="small muted pdata">{p.upaoId ? `ID ${p.upaoId} · DNI ${p.dni} · ${p.email}` : 'Cargando datos…'}</span>
 )
@@ -168,7 +165,7 @@ function DelegateRoster({ groupId }: { groupId: string }) {
       jersey: rule.jersey ? +f.jersey : undefined,
     })
     setBusy(false)
-    setMsg(err ? { ok: false, text: err } : { ok: true, text: 'Participante registrado. Queda pendiente de confirmación.' })
+    setMsg(err ? { ok: false, text: err } : { ok: true, text: 'Participante registrado.' })
     if (!err) setF({ ...f, ...empty })
   }
 
@@ -278,7 +275,6 @@ function DelegateRoster({ groupId }: { groupId: string }) {
           <div key={p.id} className="card item">
             <div className="item-main">
               <PName p={p} />
-              <PBadge p={p} />
             </div>
             <PData p={p} />
             {pendingFor(p.id) ? (
@@ -440,7 +436,6 @@ function Admin() {
   const [tab, setTab] = useState<(typeof TABS)[number]>('Actividades')
   const count: Record<string, number> = {
     Correcciones: corrections.filter((c) => c.status === 'pendiente').length,
-    Inscripciones: participants.filter((p) => p.status === 'pendiente').length,
   }
   return (
     <>
@@ -755,15 +750,13 @@ function ActivityEditor({ a, onDone }: { a: Activity; onDone: () => void }) {
 }
 
 function AdminParticipants() {
-  const { participants, confirmParticipants, removeParticipant } = useStore()
+  const { participants, removeParticipant } = useStore()
   const [gid, setGid] = useState('todos')
   const [did, setDid] = useState('todas')
-  const [onlyPending, setOnlyPending] = useState(false)
   const list = participants.filter(
-    (p) => (gid === 'todos' || p.groupId === gid) && (did === 'todas' || p.disciplineId === did) && (!onlyPending || p.status === 'pendiente'),
+    (p) => (gid === 'todos' || p.groupId === gid) && (did === 'todas' || p.disciplineId === did),
   )
   const people = new Set(participants.map((p) => p.upaoId)).size
-  const pending = list.filter((p) => p.status === 'pendiente').length
   return (
     <>
       <p className="card info">
@@ -786,14 +779,6 @@ function AdminParticipants() {
             </option>
           ))}
         </select>
-        <label className="check">
-          <input type="checkbox" checked={onlyPending} onChange={(e) => setOnlyPending(e.target.checked)} /> Solo por confirmar
-        </label>
-        {pending > 0 && did === 'todas' && (
-          <button className="btn ghost" onClick={() => confirm(`¿Confirmar las inscripciones pendientes de ${gid === 'todos' ? 'todos los ciclos' : group(gid)!.name}?`) && confirmParticipants(list.filter((p) => p.status === 'pendiente').map((p) => p.id))}>
-            Confirmar todas
-          </button>
-        )}
       </div>
       <div className="list">
         {list.map((p) => (
@@ -806,13 +791,6 @@ function AdminParticipants() {
             </div>
             <PData p={p} />
             <div className="row">
-              {p.status === 'pendiente' ? (
-                <button className="btn primary" onClick={() => confirmParticipants([p.id])}>
-                  Confirmar
-                </button>
-              ) : (
-                <PBadge p={p} />
-              )}
               <button className="btn ghost danger" onClick={() => confirm(`¿Eliminar la inscripción de ${p.name}?`) && removeParticipant(p.id)}>
                 Eliminar
               </button>
@@ -1206,7 +1184,7 @@ function ExcelUpload({ groupId }: { groupId: string }) {
               {sent && (
                 <div>
                   <p className="success">
-                    Se inscribieron {sent.filter((x) => !x).length} de {sent.length}. Quedan pendientes de confirmación por la comisión.
+                    Se inscribieron {sent.filter((x) => !x).length} de {sent.length}.
                   </p>
                   {sent.some(Boolean) && (
                     <ul className="small">

@@ -149,7 +149,7 @@ export function computeBracket(acts: Activity[], overrides: Record<string, strin
     if (team === 'none') return 'Sin rival'
     if (team) return teamName(team)
     if ('winner' in s) return `Ganador ${byId[s.winner].code}`
-    if ('slot' in s) return s.slot === 'direct' ? 'Pase directo (por confirmar)' : 'Ganador de 2.ª ronda'
+    if ('slot' in s) return s.slot === 'direct' ? 'Pase directo' : 'Ganador de 2.ª ronda'
     return 'label' in s ? s.label : ''
   }
   acts.forEach((a) => {

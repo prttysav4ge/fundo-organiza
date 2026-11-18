@@ -268,7 +268,7 @@ export function Disciplines() {
     <div className="page">
       <h1>Competencias</h1>
       <div className="disc-grid">
-        {[...DISCIPLINES].sort((x, y) => +(y.id === 'concurso') - +(x.id === 'concurso')).map((d) => {
+        {DISCIPLINES.map((d) => {
           const live = activities.filter((a) => a.disciplineId === d.id && a.status === 'en_curso').length
           return (
             <Link key={d.id} to={d.id} className="card disc">
@@ -331,16 +331,6 @@ export function DisciplinePage() {
         </p>
       )}
 
-      {d.id === 'concurso' && (
-        <div className="row">
-          <a className="btn primary vote" href={EVENT.contestFormUrl} target="_blank" rel="noreferrer">
-            📝 Postular mi proyecto
-          </a>
-          <a className="btn primary vote" href={EVENT.votingUrl} target="_blank" rel="noreferrer">
-            🗳️ Votar por un proyecto
-          </a>
-        </div>
-      )}
 
       <details className="card rules">
         <summary>Reglas principales</summary>
@@ -418,7 +408,6 @@ export function DisciplinePage() {
                 {d.roster.jersey && <th>N.°</th>}
                 <th>Nombres y apellidos</th>
                 {multi && <th>Equipo</th>}
-                <th>Estado</th>
               </tr>
             </thead>
             <tbody>
@@ -427,9 +416,6 @@ export function DisciplinePage() {
                   {d.roster!.jersey && <td className="num">{p.jersey}</td>}
                   <td>{p.name}</td>
                   {multi && <td>{p.teamId.slice(1)}</td>}
-                  <td>
-                    <span className={`badge ${p.status === 'confirmado' ? 'ok' : 'warn'}`}>{p.status === 'confirmado' ? 'Confirmado' : 'Por confirmar'}</span>
-                  </td>
                 </tr>
               ))}
               {!roster.length && (

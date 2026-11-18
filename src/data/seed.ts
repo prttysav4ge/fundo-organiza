@@ -8,13 +8,9 @@ export const EVENT = {
   hours: '8:00 a. m. – 5:00 p. m.',
   place: 'Fundo UPAO',
   day: '2026-11-21',
-  /** Cierre de inscripciones en la plataforma: miércoles 18 de noviembre, 11:59 p. m. (hora de Perú). */
-  deadline: '2026-11-18T23:59:59-05:00',
-  deadlineLabel: 'miércoles 18 de noviembre, 11:59 p. m.',
-  /** Enlace a la votación del concurso (hoja de cálculo o formulario). Vacío = no se muestra el botón. */
-  votingUrl: 'https://forms.gle/gJBw4Riis3Zpv2jj7',
-  /** Formulario de postulación al concurso. */
-  contestFormUrl: 'https://forms.gle/ZXDfRc11tewpBeZ38',
+  /** Cierre de inscripciones en la plataforma: jueves 19 de noviembre, 4:00 p. m. (hora de Perú). */
+  deadline: '2026-11-19T16:00:00-05:00',
+  deadlineLabel: 'jueves 19 de noviembre, 4:00 p. m.',
 }
 
 const ORD = ['1.er', '2.°', '3.er', '4.°', '5.°', '6.°', '7.°', '8.°', '9.°', '10.°']
@@ -157,23 +153,6 @@ export const DISCIPLINES: Discipline[] = [
     summary: 'Un solo partido entre dos equipos de alumnas. Cancha de vóley, 12:55 p. m. Cada ciclo inscribe a las jugadoras que quiera.',
     rules: ['Mismas reglas del básquet.', 'No cuenta para el límite de 2 deportes: las jugadoras pueden estar también en fútbol damas y en vóley.', 'No otorga trofeo.'],
   },
-  {
-    id: 'concurso',
-    name: 'Concurso tecnológico',
-    icon: '💡',
-    format: 'info',
-    summary: 'Premio a la Excelencia en Creación Tecnológica Estudiantil. Ganador: sábado 21, 1:45 p. m., en el escenario.',
-    rules: [
-      'Postulan estudiantes de la carrera, individual o en equipo, con un proyecto propio (los egresados no participan).',
-      'Postulación: del 13 al miércoles 18 de noviembre, 11:59 p. m.',
-      'Votación estudiantil: del lunes 16 al jueves 19 de noviembre, 10:00 p. m. Un voto por persona por proyecto, con ID UPAO.',
-      'Los 5 proyectos más votados pasan a la evaluación del jurado (viernes 20).',
-      'El proyecto debe funcionar cuando el jurado lo pruebe; si no, queda descalificado.',
-      'Criterios: potencial e impacto 35 %, concepto y problema 30 %, originalidad 20 %, experiencia de uso y diseño 15 %.',
-      'Jurado: dos representantes del DNT Hub Digital UPAO y el Ing. Leturia.',
-      'Premio: diploma. El ganador debe estar presente y con el polo de su ciclo.',
-    ],
-  },
 ]
 
 export const VENUES: Venue[] = [
@@ -285,7 +264,6 @@ const ACTIVITIES: Activity[] = [
   general('bd', 'Básquet damas', 'voley', '12:55', '13:20', { disciplineId: 'basquet_damas', sides: [{ label: 'Equipo A' }, { label: 'Equipo B' }] }),
   general('ajedrez', 'Torneo de ajedrez blitz', 'escenario', '11:30', '12:30', { disciplineId: 'ajedrez', note: 'Los inscritos deben estar en el escenario antes de las 11:30 a. m.' }),
   general('dj', 'Inicio de la música con DJ Angel', 'escenario', '13:00', '17:00', { note: 'La música sigue hasta el cierre del evento.' }),
-  general('concurso', 'Anuncio del ganador del concurso', 'escenario', '13:45', '14:00', { disciplineId: 'concurso' }),
   general('almuerzo', 'Almuerzo y premiación', 'escenario', '14:00', '15:00', { note: 'Almuerzo exclusivo para inscritos. Se entregan los trofeos de fútbol, vóley, básquet y gincana y se anuncia al campeón de ajedrez.' }),
   general('baileton', 'Bailetón', 'escenario', '14:30', '17:00'),
   general('bus2', 'Retorno en bus', 'fundo', '17:00', '17:30'),
@@ -297,8 +275,8 @@ export const seed = (): EventData => ({
   announcements: [
     {
       id: 'n1',
-      title: 'Inscripciones hasta el miércoles 18',
-      body: 'El delegado de cada ciclo inscribe a sus participantes hasta el miércoles 18 de noviembre a las 11:59 p. m. No se aceptan inscripciones ni cambios fuera de plazo.',
+      title: 'Inscripciones hasta el jueves 19, 4:00 p. m.',
+      body: 'El delegado de cada ciclo inscribe a sus participantes hasta el jueves 19 de noviembre a las 4:00 p. m. No se aceptan inscripciones ni cambios fuera de plazo.',
       date: '2026-11-13',
       groupIds: [],
       kind: 'urgente',
