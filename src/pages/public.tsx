@@ -414,7 +414,7 @@ export function DisciplinePage() {
                     <i className="swatch" style={{ background: g.color }} />
                     {g.name} <span className="muted">· {list.length} inscrito{list.length === 1 ? '' : 's'}</span>
                   </h3>
-                  <RosterTable list={list} jersey={!!d.roster.jersey} multi={teamsFor(d.id, g.id).length > 1} />
+                  <RosterTable list={list} jersey={!!d.roster?.jersey} multi={teamsFor(d.id, g.id).length > 1} />
                 </section>
               )
             })
@@ -423,7 +423,7 @@ export function DisciplinePage() {
               <p className="small muted">
                 {all.filter((p) => p.groupId === gid).length} inscritos de {group(gid)?.name}
               </p>
-              <RosterTable list={all.filter((p) => p.groupId === gid)} jersey={!!d.roster.jersey} multi={teamsFor(d.id, gid).length > 1} />
+              <RosterTable list={all.filter((p) => p.groupId === gid)} jersey={!!d.roster?.jersey} multi={teamsFor(d.id, gid).length > 1} />
             </>
           )}
           <p className="small muted">¿Ves un error en tu nombre o número? Avísale a tu delegado antes del cierre de inscripciones ({EVENT.deadlineLabel}).</p>
