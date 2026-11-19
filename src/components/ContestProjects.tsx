@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PROJECTS, type ContestProject } from '../data/projects'
-import { group } from '../data/store'
+import { group, sb } from '../data/store'
 
 /** Galería de proyectos postulados al concurso: tarjetas con su video promocional. */
 export default function ContestProjects() {
   // Orden de postulación: cada proyecto nuevo va al final.
   const list = PROJECTS
+  const likes = useLikes()
   return (
     <section className="contest">
       <div className="contest-head">
@@ -14,14 +15,14 @@ export default function ContestProjects() {
       </div>
       <div className="project-grid">
         {list.map((p) => (
-          <ProjectCard key={p.id} p={p} />
+          <ProjectCard key={p.id} p={p} likes={likes} />
         ))}
       </div>
     </section>
   )
 }
 
-function ProjectCard({ p }: { p: ContestProject }) {
+function ProjectCard({ p, likes }: { p: ContestProject; likes: Likes }) {
   const [showTest, setShowTest] = useState(false)
   const [more, setMore] = useState(false)
   const cycles = [...new Set(p.groupIds)].map((g) => group(g)).filter(Boolean)
@@ -45,12 +46,25 @@ function ProjectCard({ p }: { p: ContestProject }) {
       </div>
       <div className="project-body">
         <div className="project-title">
-          <h3>{p.name}</h3>
-          {cycles.map((g) => (
-            <span key={g!.id} className="project-cycle" style={{ background: g!.color, color: g!.ink }}>
-              {g!.name}
+          <div className="project-name">
+            <h3>{p.name}</h3>
+            {cycles.map((g) => (
+              <span key={g!.id} className="project-cycle" style={{ background: g!.color, color: g!.ink }}>
+                {g!.name}
+              </span>
+            ))}
+          </div>
+          <button
+            className={`heart${likes.mine.has(p.id) ? ' on' : ''}`}
+            onClick={() => likes.toggle(p.id)}
+            aria-pressed={likes.mine.has(p.id)}
+            aria-label={`${likes.mine.has(p.id) ? 'Quitar' : 'Dar'} corazón a ${p.name}`}
+          >
+            <span className="heart-icon" aria-hidden="true">
+              {likes.mine.has(p.id) ? '❤️' : '🤍'}
             </span>
-          ))}
+            <span>{likes.counts[p.id] ?? 0}</span>
+          </button>
         </div>
         <p className="project-summary">{p.summary}</p>
         <p className="small project-members">👤 {p.members.join(' · ')}</p>
@@ -110,4 +124,63 @@ function CopyRow({ label, value }: { label: string; value: string }) {
       </button>
     </div>
   )
+}
+
+/* ------------------------------------------------------------ corazones */
+
+interface Likes {
+  counts: Record<string, number>
+  mine: Set<string>
+  toggle: (id: string) => void
+}
+
+const store = {
+  get: (k: string) => {
+    try {
+      return localStorage.getItem(k)
+    } catch {
+      return null
+    }
+  },
+  set: (k: string, v: string) => {
+    try {
+      localStorage.setItem(k, v)
+    } catch {
+      /* sin almacenamiento */
+    }
+  },
+}
+
+/** Identificador anónimo de este dispositivo: un corazón por proyecto y dispositivo. */
+function deviceId() {
+  let id = store.get('fo-device')
+  if (!id) {
+    id = crypto.randomUUID()
+    store.set('fo-device', id)
+  }
+  return id
+}
+
+function useLikes(): Likes {
+  const [counts, setCounts] = useState<Record<string, number>>({})
+  const [mine, setMine] = useState<Set<string>>(() => new Set(JSON.parse(store.get('fo-likes') ?? '[]') as string[]))
+  useEffect(() => {
+    if (!sb) return
+    sb.from('project_like_counts')
+      .select('project_id,likes')
+      .then(({ data }) => data && setCounts(Object.fromEntries(data.map((r) => [r.project_id, r.likes]))))
+  }, [])
+  const toggle = async (id: string) => {
+    const was = mine.has(id)
+    const next = new Set(mine)
+    if (was) next.delete(id)
+    else next.add(id)
+    setMine(next)
+    store.set('fo-likes', JSON.stringify([...next]))
+    setCounts((c) => ({ ...c, [id]: Math.max(0, (c[id] ?? 0) + (was ? -1 : 1)) }))
+    if (!sb) return
+    const { data, error } = await sb.rpc('toggle_like', { p_project: id, p_device: deviceId() })
+    if (!error && typeof data === 'number') setCounts((c) => ({ ...c, [id]: data }))
+  }
+  return { counts, mine, toggle }
 }

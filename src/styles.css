@@ -333,3 +333,12 @@ code.pass { font-size: 1.1rem; user-select: all; }
 .copy-row .btn { min-height: 32px; padding: 4px 10px; }
 @media (max-width: 420px) { .copy-row { grid-template-columns: 1fr auto; } .copy-row > span { grid-column: 1 / -1; } }
 .project-image, .project-image img { display: block; width: 100%; height: 100%; } .project-image img { object-fit: cover; object-position: top; }
+.project-title { justify-content: space-between; flex-wrap: nowrap; align-items: flex-start; }
+.project-name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.heart { flex: none; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 11px; font: inherit; font-weight: 700; color: var(--ink); cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.heart:hover { border-color: #f3a8b6; }
+.heart.on { border-color: #e11d48; background: #fff1f3; color: #be123c; }
+.heart-icon { font-size: 1.1rem; line-height: 1; display: inline-block; }
+.heart.on .heart-icon { animation: pop 0.3s ease; }
+@keyframes pop { 50% { transform: scale(1.35); } }
+@media (prefers-reduced-motion: reduce) { .heart.on .heart-icon { animation: none; } }

@@ -484,3 +484,32 @@ end $$;
 revoke execute on function _gname(text), _session(uuid), _admin(uuid),
   _validate(text, text, text, text, text, text, text, int, uuid),
   _resolve_side(jsonb), _finalize(jsonb), _recompute() from public, anon, authenticated;
+
+---------------------------------------------------------------- corazones del concurso
+-- Un corazón por dispositivo y proyecto. Es solo para animar: no cuenta para el jurado.
+create table if not exists project_likes (
+  project_id text not null,
+  device_id uuid not null,
+  created_at timestamptz not null default now(),
+  primary key (project_id, device_id)
+);
+alter table project_likes enable row level security;
+
+create or replace view project_like_counts as
+  select project_id, count(*)::int as likes from project_likes group by project_id;
+grant select on project_like_counts to anon, authenticated;
+
+-- Da o quita el corazón y devuelve el total del proyecto.
+create or replace function toggle_like(p_project text, p_device uuid) returns int
+language plpgsql security definer set search_path = public as $$
+declare n int;
+begin
+  if p_project !~ '^[a-z0-9-]{1,40}$' or p_device is null then raise exception 'Datos no válidos.'; end if;
+  if exists (select 1 from project_likes where project_id = p_project and device_id = p_device) then
+    delete from project_likes where project_id = p_project and device_id = p_device;
+  else
+    insert into project_likes (project_id, device_id) values (p_project, p_device);
+  end if;
+  select count(*) into n from project_likes where project_id = p_project;
+  return n;
+end $$;

@@ -9,7 +9,7 @@ import type { Activity, Announcement, Correction, EventData, Participant, ScoreR
 // actualizan en vivo; una copia queda en el navegador para mostrarse sin señal.
 // Con VITE_LOCAL=1 todo vive solo en el navegador (vista previa de demostración).
 
-const sb = LOCAL_ONLY ? null : createClient(SUPABASE.url, SUPABASE.anonKey, { auth: { persistSession: false } })
+export const sb = LOCAL_ONLY ? null : createClient(SUPABASE.url, SUPABASE.anonKey, { auth: { persistSession: false } })
 export const REMOTE = !!sb
 
 const KEY = REMOTE ? 'fundo-organiza-cache-v2' : 'fundo-organiza-v4'
