@@ -121,4 +121,28 @@ export const PROJECTS: ContestProject[] = [
     members: ['Nicolás Romero', 'Johel Vargas', 'Hrid Sigüeñas'],
     groupIds: ['c6'],
   },
+  {
+    id: 'gta-vi-launch-tracker',
+    video: '/concurso/gta-vi-launch-tracker.mp4',
+    poster: '/concurso/gta-vi-launch-tracker.jpg',
+    name: 'GTA VI Launch Tracker',
+    url: 'https://gta-vi-launch-five.vercel.app/',
+    summary: 'Una cuenta regresiva para los fans de GTA VI que muestra a qué hora sale el juego en 40 países, sin hacer conversiones de horario.',
+    description:
+      'Consulta la cuenta regresiva, la hora de estreno en distintos países y regiones, explora el mapa y encuentra tu ubicación. Guarda tus preferencias para seguir cuánto falta.',
+    problem: 'Por las diferencias horarias y el lanzamiento regional, los fans no tienen claro a qué hora estará disponible el juego en su país.',
+    members: ['Grezia Merino'],
+    groupIds: ['c8'],
+  },
+  {
+    id: 'rutacredito',
+    name: 'RutaCredito',
+    url: 'https://rutacredito.vercel.app/',
+    summary: 'Ayuda a los estudiantes de ICSI e ISIA a planificar su matrícula: convalida cursos entre mallas y proyecta los próximos ciclos según prerrequisitos y créditos.',
+    description:
+      'Importa tu reporte de notas en PDF, Excel o CSV para reconocer los cursos aprobados, aplicar las equivalencias entre la malla ICSI 2022 e ISIA 2025 y comparar escenarios de matrícula. Funciona en el navegador, sin registro y sin enviar tus datos a ningún servidor.',
+    problem: 'Con el cambio de malla, saber qué cursos se convalidan y qué prerrequisitos faltan obliga a cruzar a mano reportes, PDF y tablas, con riesgo de errores al matricularse.',
+    members: ['Jeancarlo Morales', 'Eduardo Mamani'],
+    groupIds: ['c8'],
+  },
 ]
