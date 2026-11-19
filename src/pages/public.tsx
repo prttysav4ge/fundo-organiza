@@ -351,7 +351,7 @@ export function DisciplinePage() {
       )}
       {d.id === 'concurso' && <ContestProjects />}
       {d.id === 'ajedrez' && (
-        <a className="btn ghost vote" href="/bases/bases-ajedrez-2026.pdf" target="_blank" rel="noreferrer">
+        <a className="btn ghost vote" href={EVENT.chessRulesUrl} target="_blank" rel="noreferrer">
           📄 Ver bases del torneo de ajedrez (PDF)
         </a>
       )}

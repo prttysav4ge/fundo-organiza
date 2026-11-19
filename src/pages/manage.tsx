@@ -127,7 +127,7 @@ function Delegate({ groupId }: { groupId: string }) {
 }
 
 function DelegateRoster({ groupId }: { groupId: string }) {
-  const { participants, corrections, addParticipant, requestCorrection, inscriptionsOpen: open } = useStore()
+  const { participants, corrections, addParticipant, requestCorrection, inscriptionsOpen: open, openFor, chessOpen } = useStore()
   const g = group(groupId)!
   const [did, setDid] = useState(ROSTERED[0].id)
   const d = discipline(did)!
@@ -177,15 +177,22 @@ function DelegateRoster({ groupId }: { groupId: string }) {
       <p className={`card info ${open ? '' : 'closed'}`}>
         {open ? (
           <>
-            ⏳ Inscripciones abiertas hasta el <b>{EVENT.deadlineLabel}</b>
+            ⏳ Inscripciones abiertas hasta el <b>{EVENT.deadlineLabel}</b>. El ajedrez sigue abierto hasta el <b>{EVENT.chessDeadlineLabel}</b>.
           </>
         ) : (
           <>
-            🔒 El plazo de inscripción venció (<b>{EVENT.deadlineLabel}</b>). Ya no se aceptan inscripciones ni cambios.
+            🔒 El plazo de inscripción venció (<b>{EVENT.deadlineLabel}</b>).{' '}
+            {chessOpen ? (
+              <>
+                Solo el <b>ajedrez</b> sigue abierto hasta el <b>{EVENT.chessDeadlineLabel}</b>.
+              </>
+            ) : (
+              'Ya no se aceptan inscripciones ni cambios.'
+            )}
           </>
         )}
       </p>
-      {open && <ExcelUpload groupId={groupId} />}
+      {(open || chessOpen) && <ExcelUpload groupId={groupId} />}
 
       <h2>Inscritos por deporte</h2>
       <div className="chips">
@@ -204,7 +211,7 @@ function DelegateRoster({ groupId }: { groupId: string }) {
         })}
       </div>
 
-      {open && (
+      {openFor(did) && (
         <details className="card manual">
           <summary>O inscribir a una persona a mano en {d.name}</summary>
         <form className="form" onSubmit={submit}>

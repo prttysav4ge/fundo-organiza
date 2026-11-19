@@ -252,7 +252,8 @@ declare
 begin
   if a.role = 'delegado' then
     if v_group is distinct from a.group_id then raise exception 'Solo puedes inscribir a participantes de tu ciclo.'; end if;
-    select (value #>> '{}')::timestamptz into v_deadline from settings where key = 'deadline';
+    select (value #>> '{}')::timestamptz into v_deadline from settings
+     where key = case when p->>'disciplineId' = 'ajedrez' then 'deadline_ajedrez' else 'deadline' end;
     if v_deadline is not null and now() >= v_deadline then raise exception 'El plazo de inscripción ya venció.'; end if;
   end if;
   v_err := _validate(v_group, p->>'teamId', p->>'disciplineId', p->>'name', trim(p->>'upaoId'),
@@ -513,3 +514,7 @@ begin
   select count(*) into n from project_likes where project_id = p_project;
   return n;
 end $$;
+
+---------------------------------------------------------------- plazo propio del ajedrez
+insert into settings (key, value) values ('deadline_ajedrez', '"2026-11-20T23:30:00-05:00"'::jsonb)
+on conflict (key) do update set value = excluded.value;

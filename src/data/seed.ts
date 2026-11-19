@@ -14,7 +14,11 @@ export const EVENT = {
   contestFormUrl: 'https://forms.gle/nciCAkMdrx5XuE4n9',
   contestRulesUrl: 'https://drive.google.com/file/d/1I4lGUvqXBHAM-Ow124MSimqJ17CVxTzy/view?usp=sharing',
   /** Bases generales del Día de Integración (PDF). */
-  rulesUrl: 'https://drive.google.com/file/d/1UKOGVWf_Lm_AR2HW6robd9YZX_CvDqPW/view?usp=sharing',
+  rulesUrl: 'https://drive.google.com/file/d/142ycK0CQ9C6OAnV2vqQRwPGMsviFiyoG/view?usp=sharing',
+  chessRulesUrl: 'https://drive.google.com/file/d/1RO3OuUoL6oyJu2QIr63AA_Pe5N6twa40/view?usp=sharing',
+  /** El ajedrez cierra después: viernes 20 de noviembre, 11:30 p. m. (bases del torneo). */
+  chessDeadline: '2026-11-20T23:30:00-05:00',
+  chessDeadlineLabel: 'viernes 20 de noviembre, 11:30 p. m.',
   deadlineLabel: 'jueves 19 de noviembre, 4:00 p. m.',
 }
 

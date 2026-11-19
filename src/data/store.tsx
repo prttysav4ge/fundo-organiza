@@ -58,6 +58,9 @@ interface Store extends EventData {
   loaded: boolean
   deadline: string
   inscriptionsOpen: boolean
+  /** ¿Sigue abierta la inscripción en esta disciplina? (el ajedrez cierra después) */
+  openFor: (disciplineId: string) => boolean
+  chessOpen: boolean
   cicloId: string | null
   setCiclo: (id: string | null) => void
   session: Session | null
@@ -190,6 +193,7 @@ const errMsg = (e: { message?: string } | null) =>
 interface Remote {
   data: EventData
   deadline: string
+  chessDeadline: string
 }
 
 async function fetchRemote(session: Session | null): Promise<Remote> {
@@ -222,6 +226,7 @@ async function fetchRemote(session: Session | null): Promise<Remote> {
       directOverride: (settings.directOverride as Record<string, string>) ?? {},
     },
     deadline: (settings.deadline as string) ?? EVENT.deadline,
+    chessDeadline: (settings.deadline_ajedrez as string) ?? EVENT.chessDeadline,
   }
 }
 
@@ -230,6 +235,7 @@ async function fetchRemote(session: Session | null): Promise<Remote> {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<EventData>(() => ({ ...seed(), ...load<Partial<EventData>>(KEY, {}) }))
   const [deadline, setDeadline] = useState<string>(() => load(KEY + '-deadline', EVENT.deadline))
+  const [chessDeadline, setChessDeadline] = useState<string>(EVENT.chessDeadline)
   const [online, setOnline] = useState(true)
   const [loaded, setLoaded] = useState(!REMOTE)
   const [cicloId, setCicloId] = useState<string | null>(() => load('fundo-organiza-ciclo', null))
@@ -253,6 +259,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const r = await fetchRemote(sessionRef.current)
       setData(r.data)
       setDeadline(r.deadline)
+      setChessDeadline(r.chessDeadline)
       setOnline(true)
     } catch (e) {
       const m = (e as Error).message ?? ''
@@ -332,6 +339,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return Promise.resolve(null)
   }
   const open = now < new Date(deadline).getTime()
+  const chessOpen = now < new Date(chessDeadline).getTime()
+  const openFor = (did: string) => (did === 'ajedrez' ? chessOpen : open)
   const saveActivity = (next: Activity): Result => {
     const err = conflict(next)
     if (err) return Promise.resolve(err)
@@ -346,6 +355,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     loaded,
     deadline,
     inscriptionsOpen: open,
+    openFor,
+    chessOpen,
     cicloId,
     setCiclo: setCicloId,
     session,
@@ -386,7 +397,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     title,
 
     addParticipant: async (raw) => {
-      if (session?.role !== 'admin' && !open) return `El plazo de inscripción venció (${EVENT.deadlineLabel}).`
+      if (session?.role !== 'admin' && !openFor(raw.disciplineId))
+        return `El plazo de inscripción venció (${raw.disciplineId === 'ajedrez' ? EVENT.chessDeadlineLabel : EVENT.deadlineLabel}).`
       const p = { ...raw, name: clean(raw.name), upaoId: raw.upaoId.trim() }
       // En modo Supabase el delegado no ve los ID de otros ciclos: el servidor completa la validación.
       const err = validateParticipant(data.participants, p)
@@ -395,12 +407,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return local((d) => ({ ...d, participants: [...d.participants, { ...p, id: uid(), status: 'pendiente' }] }))
     },
     addParticipants: async (list, onProgress) => {
-      if (session?.role !== 'admin' && !open) return list.map(() => `El plazo de inscripción venció (${EVENT.deadlineLabel}).`)
       const results: (string | null)[] = []
       const added: Participant[] = []
       for (const raw of list) {
         const p = { ...raw, name: clean(raw.name), upaoId: raw.upaoId.trim(), dni: raw.dni.trim(), email: normEmail(raw.email) }
-        let err = validateParticipant([...data.participants, ...added], p)
+        let err = session?.role !== 'admin' && !openFor(p.disciplineId) ? `El plazo de inscripción venció (${EVENT.deadlineLabel}).` : validateParticipant([...data.participants, ...added], p)
         if (!err && sb) {
           const { error } = await sb.rpc('add_participant', { p_token: session?.token, p })
           err = errMsg(error)
