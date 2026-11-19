@@ -136,6 +136,8 @@ export const PROJECTS: ContestProject[] = [
   },
   {
     id: 'rutacredito',
+    video: '/concurso/rutacredito.mp4',
+    poster: '/concurso/rutacredito.jpg',
     name: 'RutaCredito',
     url: 'https://rutacredito.vercel.app/',
     summary: 'Ayuda a los estudiantes de ICSI e ISIA a planificar su matrícula: convalida cursos entre mallas y proyecta los próximos ciclos según prerrequisitos y créditos.',
