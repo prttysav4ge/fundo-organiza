@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { PROJECTS, type ContestProject } from '../data/projects'
 import { group } from '../data/store'
 
 /** Galería de proyectos postulados al concurso: tarjetas con su video promocional. */
 export default function ContestProjects() {
-  // Orden al azar en cada visita, para que ningún proyecto quede siempre primero.
-  const list = useMemo(() => [...PROJECTS].sort(() => Math.random() - 0.5), [])
+  // Orden de postulación: cada proyecto nuevo va al final.
+  const list = PROJECTS
   return (
     <section className="contest">
       <div className="contest-head">
@@ -32,6 +32,10 @@ function ProjectCard({ p }: { p: ContestProject }) {
           <video controls playsInline preload={p.poster ? 'none' : 'metadata'} poster={p.poster} aria-label={`Video promocional de ${p.name}`}>
             <source src={p.video} type="video/mp4" />
           </video>
+        ) : p.image ? (
+          <a className="project-image" href={p.url} target="_blank" rel="noreferrer" aria-label={`Abrir ${p.name}`}>
+            <img src={p.image} alt={`Vista de ${p.name}`} loading="lazy" />
+          </a>
         ) : (
           <a className="project-placeholder" href={p.url} target="_blank" rel="noreferrer" aria-label={`Abrir ${p.name}`}>
             <span className="project-initial">{p.name.slice(0, 1)}</span>

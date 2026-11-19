@@ -23,6 +23,8 @@ export interface ContestProject {
   groupIds: string[]
   /** Datos para probar el sistema, si los dieron. */
   test?: { note?: string; fields: TestAccess[] }
+  /** Imagen del proyecto cuando no hay video. */
+  image?: string
   /** Video promocional (archivo en public/concurso) y su miniatura. */
   video?: string
   poster?: string
@@ -109,6 +111,7 @@ export const PROJECTS: ContestProject[] = [
   },
   {
     id: 'axis',
+    image: '/concurso/axis.jpg',
     name: 'AXIS',
     url: 'https://d2dzf09y8gvbq6.cloudfront.net',
     summary: 'Convierte los errores de obras públicas pasadas en revisiones automáticas para que los expedientes técnicos nuevos no los repitan.',
