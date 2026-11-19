@@ -11,6 +11,7 @@ export default function ContestProjects() {
     <section className="contest">
       <div className="contest-head">
         <h2>Proyectos postulados ({PROJECTS.length})</h2>
+        <p className="disc-count">👥 {PROJECTS.reduce((n, x) => n + x.members.length, 0)} participantes inscritos</p>
         <p className="muted">Conoce lo que están creando tus compañeros. ¿Tienes un proyecto? Postula hasta el jueves 19 de noviembre, 10:00 p. m.</p>
       </div>
       <div className="project-grid">

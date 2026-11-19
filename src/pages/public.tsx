@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, Navigate, Outlet, useNavigate, useParams } from 'react-router-dom'
 import ContestProjects from '../components/ContestProjects'
+import { PROJECTS } from '../data/projects'
 import FundoMap from '../components/FundoMap'
 import { ActivityCard, AnnouncementCard, DisputeBanner, Jersey, Logo, OfflineBanner, STATUS_LABEL } from '../components/ui'
 import { GINCANA_POINTS } from '../data/bracket'
@@ -277,6 +278,11 @@ export function Disciplines() {
               <strong>{d.name}</strong>
               <span className="muted small">{d.summary}</span>
               {d.roster && <span className="small disc-count">👥 {participants.filter((p) => p.disciplineId === d.id).length} inscritos</span>}
+              {d.id === 'concurso' && (
+                <span className="small disc-count">
+                  💡 {PROJECTS.length} proyectos · 👥 {PROJECTS.reduce((n, x) => n + x.members.length, 0)} participantes
+                </span>
+              )}
               {live > 0 && (
                 <span className="badge st-en_curso">
                   <i className="dot" />
