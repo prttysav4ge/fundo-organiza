@@ -147,4 +147,17 @@ export const PROJECTS: ContestProject[] = [
     members: ['Jeancarlo Morales', 'Eduardo Mamani'],
     groupIds: ['c8'],
   },
+  {
+    id: 'cursa-ai',
+    image: '/concurso/cursa-ai.jpg',
+    name: 'Cursa AI',
+    url: 'https://plataforma-estudio-ai.vercel.app',
+    summary: 'Sube tu material en texto o PDF y la inteligencia artificial lo convierte en resúmenes, mapas conceptuales y preguntas para practicar.',
+    description:
+      'Ingresas con tu cuenta de Google, subes un tema y obtienes resúmenes, mapas conceptuales descargables, preguntas de práctica y pruebas cronometradas. Sigue tu progreso y ajusta la dificultad según tu rendimiento.',
+    problem: 'Los estudiantes usan herramientas separadas para resumir, hacer esquemas y autoevaluarse, pierden tiempo y no reciben retroalimentación según su nivel.',
+    members: ['Esthefany Alcantara', 'Mathias Castillo'],
+    groupIds: ['c6'],
+    test: { fields: [{ label: 'Acceso', value: 'Inicia sesión con tu cuenta de Google' }] },
+  },
 ]
