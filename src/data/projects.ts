@@ -31,6 +31,8 @@ export interface ContestProject {
 export const PROJECTS: ContestProject[] = [
   {
     id: 'huaicoscan',
+    video: '/concurso/huaicoscan.mp4',
+    poster: '/concurso/huaicoscan.jpg',
     name: 'HuaicoScan',
     url: 'https://huaicoscan.vercel.app/',
     summary: 'Te dice en segundos si un huaico podría llegar a tu casa en Trujillo y qué hacer para prepararte.',
@@ -42,6 +44,8 @@ export const PROJECTS: ContestProject[] = [
   },
   {
     id: 'mentoria',
+    video: '/concurso/mentoria.mp4',
+    poster: '/concurso/mentoria.jpg',
     name: 'MentorIA',
     url: 'https://mentoria-992830166095.us-central1.run.app/',
     summary: 'Un equipo de agentes de inteligencia artificial que acompaña a los estudiantes mientras escriben su proyecto de tesis.',
@@ -59,6 +63,8 @@ export const PROJECTS: ContestProject[] = [
   },
   {
     id: 'huacascan-field',
+    video: '/concurso/huacascan-field.mp4',
+    poster: '/concurso/huacascan-field.jpg',
     name: 'HuacaScan Field',
     url: 'https://huacascan-field.vercel.app/',
     summary: 'Con una foto, ayuda a los trabajadores de obra a detectar y reportar a tiempo posibles hallazgos arqueológicos durante una excavación.',
@@ -71,6 +77,8 @@ export const PROJECTS: ContestProject[] = [
   },
   {
     id: 'core-tools-lab',
+    video: '/concurso/core-tools-lab.mp4',
+    poster: '/concurso/core-tools-lab.jpg',
     name: 'Core Tools Lab',
     url: 'https://coretoolslab.com/',
     summary: 'Reúne en un solo lugar las herramientas para que los universitarios calculen sus notas, organicen su horario y sigan su rendimiento.',
@@ -81,6 +89,8 @@ export const PROJECTS: ContestProject[] = [
   },
   {
     id: 'trujillo-informado',
+    video: '/concurso/trujillo-informado.mp4',
+    poster: '/concurso/trujillo-informado.jpg',
     name: 'Trujillo Informado',
     url: 'https://www.trujilloinformado.app/login.html',
     summary: 'Permite a los ciudadanos reportar problemas ambientales de Trujillo con fotos y ubicación, y seguirlos hasta su solución.',
