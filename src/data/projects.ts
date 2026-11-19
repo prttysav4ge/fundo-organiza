@@ -107,4 +107,15 @@ export const PROJECTS: ContestProject[] = [
       ],
     },
   },
+  {
+    id: 'axis',
+    name: 'AXIS',
+    url: 'https://d2dzf09y8gvbq6.cloudfront.net',
+    summary: 'Convierte los errores de obras públicas pasadas en revisiones automáticas para que los expedientes técnicos nuevos no los repitan.',
+    description:
+      'El evaluador sube el expediente en PDF; AXIS oculta los datos personales, lo compara con el terreno real y avisa qué falló, en qué página y en qué obra anterior pasó lo mismo. También revisa los antecedentes de los ganadores en el SEACE. La decisión final es del evaluador.',
+    problem: 'En el Perú se aprueban expedientes que repiten fallas ya conocidas, que terminan en sobrecostos y obras paralizadas (2,262 a junio de 2026, 92 en La Libertad).',
+    members: ['Nicolás Romero', 'Johel Vargas', 'Hrid Sigüeñas'],
+    groupIds: ['c6'],
+  },
 ]
