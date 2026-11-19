@@ -350,6 +350,11 @@ export function DisciplinePage() {
         </div>
       )}
       {d.id === 'concurso' && <ContestProjects />}
+      {['futbol', 'basquet', 'voley', 'gincana', 'futbol_damas', 'basquet_damas'].includes(d.id) && (
+        <a className="btn ghost vote" href={EVENT.rulesUrl} target="_blank" rel="noreferrer">
+          📄 Ver bases generales (PDF)
+        </a>
+      )}
 
       <details className="card rules">
         <summary>Reglas principales</summary>

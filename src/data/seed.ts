@@ -13,6 +13,8 @@ export const EVENT = {
   /** Concurso tecnológico: formulario de postulación y bases en PDF. */
   contestFormUrl: 'https://forms.gle/nciCAkMdrx5XuE4n9',
   contestRulesUrl: 'https://drive.google.com/file/d/1I4lGUvqXBHAM-Ow124MSimqJ17CVxTzy/view?usp=sharing',
+  /** Bases generales del Día de Integración (PDF). */
+  rulesUrl: 'https://drive.google.com/file/d/1UKOGVWf_Lm_AR2HW6robd9YZX_CvDqPW/view?usp=sharing',
   deadlineLabel: 'jueves 19 de noviembre, 4:00 p. m.',
 }
 
