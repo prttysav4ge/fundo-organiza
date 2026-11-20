@@ -73,10 +73,10 @@ function ProjectCard({ p, likes }: { p: ContestProject; likes: Likes }) {
         <p className="small project-members">👤 {p.members.join(' · ')}</p>
         {more && (
           <div className="project-more small">
+            <h4>Descripción</h4>
             <p>{p.description}</p>
-            <p>
-              <b>Problema que resuelve:</b> {p.problem}
-            </p>
+            <h4>Problema que resuelve</h4>
+            <p>{p.problem}</p>
           </div>
         )}
         <div className="project-actions">
