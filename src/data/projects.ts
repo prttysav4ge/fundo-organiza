@@ -25,6 +25,8 @@ export interface ContestProject {
   test?: { note?: string; fields: TestAccess[] }
   /** Imagen del proyecto cuando no hay video. */
   image?: string
+  /** Video de YouTube (id) cuando no tenemos el archivo. */
+  youtube?: string
   /** Video promocional (archivo en public/concurso) y su miniatura. */
   video?: string
   poster?: string
@@ -94,20 +96,13 @@ export const PROJECTS: ContestProject[] = [
     video: '/concurso/trujillo-informado.mp4',
     poster: '/concurso/trujillo-informado.jpg',
     name: 'Trujillo Informado',
-    url: 'https://www.trujilloinformado.app/login.html',
+    url: 'https://frontendtrujilloinformado.vercel.app/',
     summary: 'Permite a los ciudadanos reportar problemas ambientales de Trujillo con fotos y ubicación, y seguirlos hasta su solución.',
     description:
       'Los reportes se ven en un mapa y llegan a un panel de supervisión donde se filtran, se revisa su historial y se exportan en PDF, con notificaciones para darles seguimiento.',
     problem: 'No existe un sistema centralizado y eficiente para reportar y dar seguimiento a los problemas ambientales de la ciudad.',
     members: ['Anghelo Pintado', 'Cindy Montoya'],
     groupIds: ['c8'],
-    test: {
-      note: 'Cuenta de supervisor',
-      fields: [
-        { label: 'Correo', value: 'supervisorzona6tarde@gmail.com' },
-        { label: 'Contraseña', value: 'supervisorzona6tarde' },
-      ],
-    },
   },
   {
     id: 'axis',
@@ -156,8 +151,53 @@ export const PROJECTS: ContestProject[] = [
     description:
       'Ingresas con tu cuenta de Google, subes un tema y obtienes resúmenes, mapas conceptuales descargables, preguntas de práctica y pruebas cronometradas. Sigue tu progreso y ajusta la dificultad según tu rendimiento.',
     problem: 'Los estudiantes usan herramientas separadas para resumir, hacer esquemas y autoevaluarse, pierden tiempo y no reciben retroalimentación según su nivel.',
-    members: ['Esthefany Alcantara', 'Mathias Castillo'],
+    members: ['Esthefany Alcantara', 'Mathias Castillo', 'Karina Aguilar', 'Diego Chávez', 'Valentino Paredes', 'María Poémape', 'Lucas Muñoz'],
     groupIds: ['c6'],
     test: { fields: [{ label: 'Acceso', value: 'Inicia sesión con tu cuenta de Google' }] },
+  },
+  {
+    id: 'nexora',
+    video: '/concurso/nexora.mp4',
+    poster: '/concurso/nexora.jpg',
+    name: 'Nexora',
+    url: 'https://nexora-web-sage-one.vercel.app/',
+    summary: 'Simula con inteligencia artificial las consecuencias de tus decisiones de negocio antes de arriesgar dinero real.',
+    description:
+      'Identifica problemas de un negocio, propone soluciones con IA y simula cada estrategia en un árbol de escenarios a corto, mediano y largo plazo. Un chatbot explica los resultados, los riesgos y las oportunidades.',
+    problem: 'Emprendedores y pequeños empresarios deciden sobre precios, marketing o inversiones sin herramientas accesibles para prever sus consecuencias.',
+    members: ['Gerardo Gonzalez', 'Beatriz Gonzalez'],
+    groupIds: ['c6', 'ce'],
+  },
+  {
+    id: 'deo',
+    video: '/concurso/deo.mp4',
+    poster: '/concurso/deo.jpg',
+    name: 'DEO',
+    url: 'https://justmenae.github.io/creacion-tecnologica/',
+    summary: 'Diagnostica la estructura de startups y mypes que crecen rápido para detectar a tiempo cuellos de botella y cruces de mando.',
+    description:
+      'Arma el organigrama de tu empresa y obtén un índice de salud organizacional con alertas, arquetipos y un plan de acción basado en Mintzberg, Daft y Galbraith. Genera un reporte ejecutivo descargable.',
+    problem: 'Cuando una empresa pequeña crece sin adaptar su organización, las decisiones se centralizan, los equipos se saturan y la operación se atasca.',
+    members: ['Danae de la Cruz', 'Pedro Jeanpool'],
+    groupIds: ['c2'],
+  },
+  {
+    id: 'aquacheck',
+    youtube: 'caWAzQbwXDI',
+    name: 'AquaCheck',
+    url: 'https://aquacheck-26.vercel.app',
+    summary: 'Ayuda a las familias de Trujillo a prepararse ante un corte de agua: calcula cuántos días les alcanza y les recuerda el mantenimiento del tanque.',
+    description:
+      'Desde el celular, sin cuenta: indicas cuántos son y cuánta agua guardan, y muestra los días que alcanza, un semáforo de mantenimiento y los pasos para antes, durante y después del corte, con contactos oficiales. Funciona sin internet y tiene un panel para el equipo del programa.',
+    problem: 'Muchas familias, sobre todo en Moche, no saben cuánto les dura el agua guardada, olvidan limpiar el tanque y no tienen a mano los contactos oficiales.',
+    members: ['Juan Carranza', 'Claudia Gutierrez', 'Fabian Chiroque', 'Flavia Ubillús'],
+    groupIds: ['c10'],
+    test: {
+      note: 'El uso normal no pide cuenta. Esta es solo para el panel de Administración (botón «Administrador», arriba a la derecha)',
+      fields: [
+        { label: 'Usuario', value: 'aquacheck.prueba@gmail.com' },
+        { label: 'Contraseña', value: 'aquacheckprueba2026' },
+      ],
+    },
   },
 ]

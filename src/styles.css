@@ -342,3 +342,8 @@ code.pass { font-size: 1.1rem; user-select: all; }
 .heart.on .heart-icon { animation: pop 0.3s ease; }
 @keyframes pop { 50% { transform: scale(1.35); } }
 @media (prefers-reduced-motion: reduce) { .heart.on .heart-icon { animation: none; } }
+.yt, .yt-thumb { display: block; width: 100%; height: 100%; border: 0; padding: 0; background: #000; }
+.yt-thumb { position: relative; cursor: pointer; }
+.yt-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.yt-play { position: absolute; inset: 0; margin: auto; width: 64px; height: 44px; border-radius: 12px; background: rgba(220, 0, 0, 0.9); color: #fff; font-size: 1.3rem; display: flex; align-items: center; justify-content: center; }
+.yt-thumb:hover .yt-play { background: #f00; }

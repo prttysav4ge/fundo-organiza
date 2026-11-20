@@ -34,6 +34,8 @@ function ProjectCard({ p, likes }: { p: ContestProject; likes: Likes }) {
           <video controls playsInline preload={p.poster ? 'none' : 'metadata'} poster={p.poster} aria-label={`Video promocional de ${p.name}`}>
             <source src={p.video} type="video/mp4" />
           </video>
+        ) : p.youtube ? (
+          <YouTube id={p.youtube} title={p.name} />
         ) : p.image ? (
           <a className="project-image" href={p.url} target="_blank" rel="noreferrer" aria-label={`Abrir ${p.name}`}>
             <img src={p.image} alt={`Vista de ${p.name}`} loading="lazy" />
@@ -184,4 +186,25 @@ function useLikes(): Likes {
     if (!error && typeof data === 'number') setCounts((c) => ({ ...c, [id]: data }))
   }
   return { counts, mine, toggle }
+}
+
+/** Video de YouTube: muestra la miniatura y carga el reproductor solo al tocarla. */
+function YouTube({ id, title }: { id: string; title: string }) {
+  const [play, setPlay] = useState(false)
+  if (play)
+    return (
+      <iframe
+        className="yt"
+        src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`}
+        title={`Video promocional de ${title}`}
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+        allowFullScreen
+      />
+    )
+  return (
+    <button className="yt-thumb" onClick={() => setPlay(true)} aria-label={`Reproducir el video de ${title}`}>
+      <img src={`https://i.ytimg.com/vi/${id}/hqdefault.jpg`} alt="" loading="lazy" />
+      <span className="yt-play" aria-hidden="true">▶</span>
+    </button>
+  )
 }
