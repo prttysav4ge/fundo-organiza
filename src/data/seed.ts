@@ -8,8 +8,8 @@ export const EVENT = {
   hours: '8:00 a. m. – 5:00 p. m.',
   place: 'Fundo UPAO',
   day: '2026-11-21',
-  /** Cierre de inscripciones en la plataforma: jueves 19 de noviembre, 4:00 p. m. (hora de Perú). */
-  deadline: '2026-11-19T16:00:00-05:00',
+  /** Cierre de inscripciones en la plataforma: viernes 20 de noviembre, 11:59 p. m. (hora de Perú). */
+  deadline: '2026-11-20T23:59:59-05:00',
   /** Concurso tecnológico: formulario de postulación y bases en PDF. */
   contestFormUrl: 'https://forms.gle/nciCAkMdrx5XuE4n9',
   contestRulesUrl: 'https://drive.google.com/file/d/1I4lGUvqXBHAM-Ow124MSimqJ17CVxTzy/view?usp=sharing',
@@ -17,9 +17,9 @@ export const EVENT = {
   rulesUrl: 'https://drive.google.com/file/d/142ycK0CQ9C6OAnV2vqQRwPGMsviFiyoG/view?usp=sharing',
   chessRulesUrl: 'https://drive.google.com/file/d/1RO3OuUoL6oyJu2QIr63AA_Pe5N6twa40/view?usp=sharing',
   /** El ajedrez cierra después: viernes 20 de noviembre, 11:30 p. m. (bases del torneo). */
-  chessDeadline: '2026-11-20T23:30:00-05:00',
-  chessDeadlineLabel: 'viernes 20 de noviembre, 11:30 p. m.',
-  deadlineLabel: 'jueves 19 de noviembre, 4:00 p. m.',
+  chessDeadline: '2026-11-20T23:59:59-05:00',
+  chessDeadlineLabel: 'viernes 20 de noviembre, 11:59 p. m.',
+  deadlineLabel: 'viernes 20 de noviembre, 11:59 p. m.',
 }
 
 const ORD = ['1.er', '2.°', '3.er', '4.°', '5.°', '6.°', '7.°', '8.°', '9.°', '10.°']
@@ -304,8 +304,8 @@ export const seed = (): EventData => ({
   announcements: [
     {
       id: 'n1',
-      title: 'Inscripciones hasta el jueves 19, 4:00 p. m.',
-      body: 'El delegado de cada ciclo inscribe a sus participantes hasta el jueves 19 de noviembre a las 4:00 p. m. No se aceptan inscripciones ni cambios fuera de plazo.',
+      title: 'Inscripciones hasta el viernes 20, 11:59 p. m.',
+      body: 'El delegado de cada ciclo inscribe a sus participantes hasta el viernes 20 de noviembre a las 11:59 p. m. No se aceptan inscripciones ni cambios fuera de plazo.',
       date: '2026-11-13',
       groupIds: [],
       kind: 'urgente',

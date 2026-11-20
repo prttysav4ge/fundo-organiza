@@ -516,5 +516,5 @@ begin
 end $$;
 
 ---------------------------------------------------------------- plazo propio del ajedrez
-insert into settings (key, value) values ('deadline_ajedrez', '"2026-11-20T23:30:00-05:00"'::jsonb)
+insert into settings (key, value) values ('deadline_ajedrez', '"2026-11-20T23:59:59-05:00"'::jsonb)
 on conflict (key) do update set value = excluded.value;
