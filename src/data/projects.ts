@@ -183,14 +183,15 @@ export const PROJECTS: ContestProject[] = [
   },
   {
     id: 'aquacheck',
-    youtube: 'caWAzQbwXDI',
+    video: '/concurso/aquacheck.mp4',
+    poster: '/concurso/aquacheck.jpg',
     name: 'AquaCheck',
     url: 'https://aquacheck-26.vercel.app',
     summary: 'Ayuda a las familias de Trujillo a prepararse ante un corte de agua: calcula cuántos días les alcanza y les recuerda el mantenimiento del tanque.',
     description:
       'Desde el celular, sin cuenta: indicas cuántos son y cuánta agua guardan, y muestra los días que alcanza, un semáforo de mantenimiento y los pasos para antes, durante y después del corte, con contactos oficiales. Funciona sin internet y tiene un panel para el equipo del programa.',
     problem: 'Muchas familias, sobre todo en Moche, no saben cuánto les dura el agua guardada, olvidan limpiar el tanque y no tienen a mano los contactos oficiales.',
-    members: ['Juan Carranza', 'Claudia Gutierrez', 'Fabian Chiroque', 'Flavia Ubillús'],
+    members: ['Juan Carranza'],
     groupIds: ['c10'],
     test: {
       note: 'El uso normal no pide cuenta. Esta es solo para el panel de Administración (botón «Administrador», arriba a la derecha)',
