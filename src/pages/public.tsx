@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, NavLink, Navigate, Outlet, useNavigate, useParams } from 'react-router-dom'
+import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 import ContestProjects from '../components/ContestProjects'
 import { PROJECTS } from '../data/projects'
 import FundoMap from '../components/FundoMap'
@@ -24,6 +24,7 @@ const countdown = () => {
 export function Welcome() {
   const { setCiclo, cicloId } = useStore()
   const nav = useNavigate()
+  const from = (useLocation().state as { from?: string } | null)?.from
   return (
     <div className="welcome">
       <Logo />
@@ -41,7 +42,7 @@ export function Welcome() {
             style={{ borderColor: g.color }}
             onClick={() => {
               setCiclo(g.id)
-              nav('/inicio')
+              nav(from && from !== '/' ? from : '/inicio')
             }}
           >
             <b>{g.id === 'ce' ? 'Egresados' : g.name}</b>
@@ -59,7 +60,9 @@ export function Welcome() {
 export function Layout() {
   const { cicloId, session } = useStore()
   const g = group(cicloId)
-  if (!g) return <Navigate to="/" replace />
+  const loc = useLocation()
+  // Solo el inicio necesita el ciclo; las demás páginas (p. ej. el enlace del jurado) se abren directo.
+  if (!g && loc.pathname === '/inicio') return <Navigate to="/" replace />
   return (
     <>
       <header className="topbar">
@@ -74,9 +77,9 @@ export function Layout() {
           ))}
         </nav>
         <div className="top-actions">
-          <Link to="/" className="chip" title="Cambiar de ciclo">
-            <i className="swatch" style={{ background: g.color }} />
-            {g.name} ▾
+          <Link to="/" state={{ from: loc.pathname }} className="chip" title={g ? 'Cambiar de ciclo' : 'Elegir mi ciclo'}>
+            {g && <i className="swatch" style={{ background: g.color }} />}
+            {g ? g.name : 'Elegir mi ciclo'} ▾
           </Link>
           <Link to="/delegados" className="link hide-sm">
             {session ? 'Panel de gestión' : 'Delegados'}
@@ -230,7 +233,7 @@ export function Schedule() {
   const [status, setStatus] = useState<Status | 'todos'>('todos')
   const list = [...activities]
     .sort(byStart)
-    .filter((a) => !onlyMine || isGeneral(a) || plays(a, cicloId!))
+    .filter((a) => !onlyMine || isGeneral(a) || (!!cicloId && plays(a, cicloId)))
     .filter((a) => status === 'todos' || a.status === status)
   return (
     <div className="page">
@@ -300,7 +303,7 @@ export function Disciplines() {
 export function DisciplinePage() {
   const { id } = useParams()
   const { activities, participants, cicloId, bracket } = useStore()
-  const [gid, setGid] = useState(cicloId!)
+  const [gid, setGid] = useState(cicloId ?? 'todos')
   const d = discipline(id)
   if (!d) return <Navigate to="/competencias" replace />
   const acts = activities.filter((a) => a.disciplineId === d.id).sort(byStart)
@@ -465,7 +468,7 @@ export function DisciplinePage() {
 export function Announcements() {
   const { announcements, cicloId } = useStore()
   const [all, setAll] = useState(false)
-  const list = announcements.filter((n) => all || !n.groupIds.length || n.groupIds.includes(cicloId!))
+  const list = announcements.filter((n) => all || !n.groupIds.length || !cicloId || n.groupIds.includes(cicloId))
   return (
     <div className="page">
       <h1>Anuncios</h1>
