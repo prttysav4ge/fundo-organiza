@@ -201,13 +201,14 @@ async function fetchRemote(session: Session | null): Promise<Remote> {
     sb!.from('activities').select('data'),
     sb!.from('announcements').select('data,created_at').order('created_at', { ascending: false }),
     sb!.from('settings').select('key,value'),
-    sb!.from('participants_public').select('*').order('created_at'),
+    sb!.rpc('public_participants'),
     sb!.from('score_reports').select('*'),
   ])
-  const err = a.error || n.error || s.error || p.error || rp.error
+  // La lista de inscritos y los reportes no deben marcar «sin conexión» si solo fallan ellos.
+  const err = a.error || n.error || s.error
   if (err) throw err
   const settings = Object.fromEntries((s.data ?? []).map((r) => [r.key, r.value]))
-  let participants = (p.data ?? []).map(toParticipant)
+  let participants = ((p.error ? null : (p.data as Row[])) ?? []).map(toParticipant)
   let corrections: Correction[] = []
   if (session?.token) {
     const [mp, mc] = await Promise.all([sb!.rpc('my_participants', { p_token: session.token }), sb!.rpc('my_corrections', { p_token: session.token })])

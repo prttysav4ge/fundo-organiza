@@ -518,3 +518,19 @@ end $$;
 ---------------------------------------------------------------- plazo propio del ajedrez
 insert into settings (key, value) values ('deadline_ajedrez', '"2026-11-20T23:59:59-05:00"'::jsonb)
 on conflict (key) do update set value = excluded.value;
+
+---------------------------------------------------------------- lecturas públicas por función
+-- Las vistas dejaron de poder leerse con la clave pública; estas funciones devuelven
+-- lo mismo sin depender de los permisos de las tablas.
+create or replace function public_participants()
+returns table (id uuid, group_id text, team_id text, discipline_id text, name text, jersey int, status text, created_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select id, group_id, team_id, discipline_id, name, jersey, status, created_at from participants order by created_at
+$$;
+
+create or replace function like_counts() returns table (project_id text, likes int)
+language sql stable security definer set search_path = public as $$
+  select project_id, count(*)::int from project_likes group by project_id
+$$;
+
+grant execute on function public_participants(), like_counts() to anon, authenticated;

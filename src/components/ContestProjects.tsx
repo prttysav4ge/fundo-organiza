@@ -169,9 +169,7 @@ function useLikes(): Likes {
   const [mine, setMine] = useState<Set<string>>(() => new Set(JSON.parse(store.get('fo-likes') ?? '[]') as string[]))
   useEffect(() => {
     if (!sb) return
-    sb.from('project_like_counts')
-      .select('project_id,likes')
-      .then(({ data }) => data && setCounts(Object.fromEntries(data.map((r) => [r.project_id, r.likes]))))
+    sb.rpc('like_counts').then(({ data }) => data && setCounts(Object.fromEntries((data as { project_id: string; likes: number }[]).map((r) => [r.project_id, r.likes]))))
   }, [])
   const toggle = async (id: string) => {
     const was = mine.has(id)
